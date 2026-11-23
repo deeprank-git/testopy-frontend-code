@@ -1,18 +1,11 @@
 import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
-  BarChart3,
   Bell,
   BookOpen,
-  ChevronsUpDown,
-  FileText,
   Flag,
-  GraduationCap,
-  Image as ImageIcon,
+  LayoutDashboard,
   LogOut,
-  Moon,
   Newspaper,
-  Settings,
-  Sun,
   User,
   Users,
   type LucideIcon,
@@ -20,17 +13,13 @@ import {
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
-  SidebarInset,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
-  SidebarRail,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import {
@@ -42,106 +31,58 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { Logo } from "@/components/site/Logo";
 import { getUser } from "@/lib/auth-store";
 import * as authService from "@/services/authService";
-import { useAdminTheme } from "@/hooks/use-admin-theme";
 import { AdminBreadcrumbs, BreadcrumbsProvider } from "./breadcrumbs";
 
 type NavItem = { to: string; label: string; icon: LucideIcon; exact?: boolean };
 
-const NAV: { label: string; items: NavItem[] }[] = [
-  {
-    label: "Overview",
-    items: [{ to: "/admin-dashboard", label: "Dashboard", icon: BarChart3, exact: true }],
-  },
-  {
-    label: "Content",
-    items: [
-      { to: "/admin-dashboard/exams", label: "Exams", icon: BookOpen },
-      { to: "/admin-dashboard/current-affairs", label: "Current Affairs", icon: Newspaper },
-      { to: "/admin-dashboard/pages", label: "Pages", icon: FileText },
-      { to: "/admin-dashboard/media", label: "Media", icon: ImageIcon },
-    ],
-  },
-  {
-    label: "People",
-    items: [
-      { to: "/admin-dashboard/users", label: "Users", icon: Users },
-      { to: "/admin-dashboard/reports", label: "Reports", icon: Flag },
-    ],
-  },
-  {
-    label: "System",
-    items: [
-      { to: "/admin-dashboard/notifications", label: "Notifications", icon: Bell },
-      { to: "/admin-dashboard/settings", label: "Settings", icon: Settings },
-    ],
-  },
+// Same flat list style as the student DashboardSidebar. Pages, Media and
+// Settings are left out: nothing on the student site reads them yet (their
+// routes still exist under /admin-dashboard/*).
+const NAV: NavItem[] = [
+  { to: "/admin-dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true },
+  { to: "/admin-dashboard/exams", label: "Exams", icon: BookOpen },
+  { to: "/admin-dashboard/current-affairs", label: "Current Affairs", icon: Newspaper },
+  { to: "/admin-dashboard/users", label: "Users", icon: Users },
+  { to: "/admin-dashboard/reports", label: "Reports", icon: Flag },
+  { to: "/admin-dashboard/notifications", label: "Notifications", icon: Bell },
 ];
-
-const initials = (s: string) =>
-  s
-    .split(/[\s@._-]+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0]!.toUpperCase())
-    .join("") || "A";
 
 export function AdminShell() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
-  const { theme, toggle } = useAdminTheme();
   const user = getUser();
-  const displayName = user?.name || user?.email || "Admin";
+  const name = user?.name || user?.email?.split("@")[0] || "Admin";
+  const initials = name.slice(0, 2).toUpperCase();
 
   const logOut = () => {
     authService.logout();
     navigate({ to: "/admin-login" });
   };
 
-  const isActive = (to: string, exact?: boolean) =>
-    exact
-      ? pathname === to || pathname === `${to}/`
-      : pathname === to || pathname.startsWith(`${to}/`);
+  const isActive = (item: NavItem) =>
+    item.exact
+      ? pathname === item.to || pathname === `${item.to}/`
+      : pathname === item.to || pathname.startsWith(`${item.to}/`);
 
   return (
     <SidebarProvider>
-      <Sidebar collapsible="icon">
-        <SidebarHeader>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton size="lg" asChild>
-                <Link to="/admin-dashboard">
-                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                    <GraduationCap className="size-4" />
-                  </div>
-                  <div className="grid flex-1 text-left leading-tight">
-                    <span className="font-display font-semibold">GovtPrep</span>
-                    <span className="text-xs text-muted-foreground">Admin console</span>
-                  </div>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarHeader>
-
-        <SidebarContent>
-          {NAV.map((group) => (
-            <SidebarGroup key={group.label}>
-              <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+      <div className="flex min-h-screen w-full bg-surface-muted">
+        <Sidebar collapsible="icon">
+          <SidebarHeader className="border-b border-sidebar-border px-4 py-3">
+            <Logo />
+          </SidebarHeader>
+          <SidebarContent>
+            <SidebarGroup>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {group.items.map((item) => (
+                  {NAV.map((item) => (
                     <SidebarMenuItem key={item.to}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={isActive(item.to, item.exact)}
-                        tooltip={item.label}
-                      >
-                        <Link to={item.to as never}>
-                          <item.icon />
+                      <SidebarMenuButton asChild isActive={isActive(item)} tooltip={item.label}>
+                        <Link to={item.to as never} className="flex items-center gap-2.5">
+                          <item.icon className="h-4 w-4" />
                           <span>{item.label}</span>
                         </Link>
                       </SidebarMenuButton>
@@ -150,73 +91,47 @@ export function AdminShell() {
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
-          ))}
-        </SidebarContent>
+          </SidebarContent>
+        </Sidebar>
 
-        <SidebarFooter>
-          <SidebarMenu>
-            <SidebarMenuItem>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <BreadcrumbsProvider>
+            <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background px-4 lg:px-6">
+              <SidebarTrigger />
+              <div className="min-w-0 flex-1">
+                <AdminBreadcrumbs />
+              </div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <SidebarMenuButton size="lg">
-                    <Avatar className="size-8 rounded-lg">
-                      <AvatarFallback className="rounded-lg bg-primary/10 text-primary">
-                        {initials(displayName)}
+                  <button className="flex items-center gap-2 rounded-full py-1 pl-1 pr-3 hover:bg-muted">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="bg-primary text-xs font-semibold text-primary-foreground">
+                        {initials}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="grid flex-1 text-left text-sm leading-tight">
-                      <span className="truncate font-medium">{displayName}</span>
-                      <span className="truncate text-xs text-muted-foreground">Administrator</span>
-                    </div>
-                    <ChevronsUpDown className="ml-auto size-4" />
-                  </SidebarMenuButton>
+                    <span className="hidden text-sm font-medium sm:inline">
+                      {name.split(" ")[0]}
+                    </span>
+                  </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent side="top" align="start" className="w-56">
-                  <DropdownMenuLabel className="truncate font-normal text-muted-foreground">
-                    {user?.email}
-                  </DropdownMenuLabel>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel className="truncate">{user?.email}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onSelect={() => navigate({ to: "/admin-dashboard/profile" })}>
-                    <User className="size-4" /> My profile
+                    <User className="mr-2 h-4 w-4" /> My profile
                   </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={toggle}>
-                    {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
-                    {theme === "dark" ? "Light mode" : "Dark mode"}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
                   <DropdownMenuItem onSelect={logOut}>
-                    <LogOut className="size-4" /> Log out
+                    <LogOut className="mr-2 h-4 w-4" /> Sign out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarFooter>
-        <SidebarRail />
-      </Sidebar>
-
-      <SidebarInset className="min-w-0 bg-muted/40">
-        <BreadcrumbsProvider>
-          <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-background/80 px-4 backdrop-blur">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
-            <div className="min-w-0 flex-1">
-              <AdminBreadcrumbs />
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggle}
-              aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-            >
-              {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
-            </Button>
-          </header>
-          <main className="mx-auto w-full max-w-7xl flex-1 p-4 md:p-6 lg:p-8">
-            <Outlet />
-          </main>
-        </BreadcrumbsProvider>
-      </SidebarInset>
+            </header>
+            <main className="mx-auto w-full max-w-7xl flex-1 p-4 lg:p-6">
+              <Outlet />
+            </main>
+          </BreadcrumbsProvider>
+        </div>
+      </div>
     </SidebarProvider>
   );
 }

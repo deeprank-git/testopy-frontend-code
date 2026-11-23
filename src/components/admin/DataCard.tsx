@@ -14,7 +14,7 @@ export function DataCard({
   footer?: ReactNode;
 }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+    <div className="overflow-hidden rounded-xl border border-border bg-card shadow">
       {toolbar && (
         <div className="flex flex-col gap-2 border-b border-border p-3 sm:flex-row sm:items-center sm:justify-between">
           {toolbar}

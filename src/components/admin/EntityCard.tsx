@@ -39,7 +39,7 @@ export function EntityCard({
   return (
     <div
       className={cn(
-        "group relative overflow-hidden rounded-xl border border-border bg-card shadow-sm transition hover:-translate-y-0.5 hover:shadow-md",
+        "group relative overflow-hidden rounded-xl border border-border bg-card shadow transition hover:-translate-y-0.5 hover:shadow-md",
         muted && "opacity-70",
       )}
     >

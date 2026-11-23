@@ -19,7 +19,7 @@ export function PageHeader({
       <div className="flex min-w-0 items-start gap-4">
         {media}
         <div className="min-w-0">
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground">
+          <h1 className="font-display text-2xl font-extrabold text-foreground md:text-3xl">
             {title}
           </h1>
           {description && (
