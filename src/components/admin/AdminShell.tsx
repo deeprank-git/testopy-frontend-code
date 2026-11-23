@@ -126,7 +126,7 @@ export function AdminShell() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </header>
-            <main className="mx-auto w-full max-w-7xl flex-1 p-4 lg:p-6">
+            <main className="w-full flex-1 p-4 lg:p-6">
               <Outlet />
             </main>
           </BreadcrumbsProvider>
