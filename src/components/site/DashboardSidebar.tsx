@@ -67,8 +67,8 @@ export function DashboardSidebar({ isAdmin }: { isAdmin?: boolean }) {
               })}
               {isAdmin && (
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname.startsWith("/admin")}>
-                    <Link to="/admin" className="flex items-center gap-2.5">
+                  <SidebarMenuButton asChild isActive={pathname.startsWith("/admin-dashboard")}>
+                    <Link to="/admin-dashboard" className="flex items-center gap-2.5">
                       <Shield className="h-4 w-4" />
                       <span>Admin Panel</span>
                     </Link>

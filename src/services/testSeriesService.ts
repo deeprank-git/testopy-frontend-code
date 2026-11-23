@@ -1,6 +1,10 @@
 import axiosClient from "@/api/axiosClient";
 
-export async function getTestSeries(params?: { category?: string; isActive?: boolean; isPublished?: boolean }) {
+export async function getTestSeries(params?: {
+  category?: string;
+  isActive?: boolean;
+  isPublished?: boolean;
+}) {
   const res = await axiosClient.get("/test-series", { params });
   return res.data;
 }
@@ -10,13 +14,58 @@ export async function getTestSeriesById(id: string) {
   return res.data;
 }
 
-export async function createTestSeries(data: Record<string, unknown>) {
-  const res = await axiosClient.post("/admin/test-series", data);
+export type ImportantDates = Record<string, { from: string; to: string }>;
+
+export type TestSeriesInput = {
+  name: string;
+  description: string;
+  category: string;
+  isPaid: boolean;
+  price: number;
+  marksPerQuestion: number;
+  negativeMarking: boolean;
+  negativeMarksPerQuestion: number;
+  officialWebsite: string;
+  applyLink: string;
+  importantDates: ImportantDates;
+  imageFile?: File | null;
+  notificationPdfFile?: File | null;
+};
+
+// Admin create/update are multipart (routes/testSeriesAdminRoutes.js reads
+// `image` and `notificationPdf` files); importantDates travels as a JSON string.
+function toSeriesFormData(input: Partial<TestSeriesInput> & { isPublished?: boolean }) {
+  const fd = new FormData();
+  for (const [key, value] of Object.entries(input)) {
+    if (
+      value === undefined ||
+      value === null ||
+      key === "imageFile" ||
+      key === "notificationPdfFile"
+    )
+      continue;
+    fd.append(key, key === "importantDates" ? JSON.stringify(value) : String(value));
+  }
+  if (input.imageFile) fd.append("image", input.imageFile);
+  if (input.notificationPdfFile) fd.append("notificationPdf", input.notificationPdfFile);
+  return fd;
+}
+
+export async function createTestSeries(input: TestSeriesInput) {
+  const res = await axiosClient.post("/admin/test-series", toSeriesFormData(input));
   return res.data;
 }
 
-export async function updateTestSeries(id: string, data: Record<string, unknown>) {
-  const res = await axiosClient.patch(`/admin/test-series/${id}`, data);
+export async function updateTestSeries(
+  id: string,
+  input: Partial<TestSeriesInput> & { isPublished?: boolean },
+) {
+  const res = await axiosClient.patch(`/admin/test-series/${id}`, toSeriesFormData(input));
+  return res.data;
+}
+
+export async function restoreTestSeries(id: string) {
+  const res = await axiosClient.patch(`/admin/test-series/${id}`, { isActive: true });
   return res.data;
 }
 

@@ -6,7 +6,9 @@ export async function getQuestionsByTest(testId: string) {
 }
 
 export async function getQuestionsAdmin(testId?: string) {
-  const res = await axiosClient.get("/admin/questions", { params: testId ? { test: testId } : undefined });
+  const res = await axiosClient.get("/admin/questions", {
+    params: testId ? { test: testId } : undefined,
+  });
   return res.data;
 }
 
@@ -15,13 +17,21 @@ export async function createQuestion(data: Record<string, unknown>) {
   return res.data;
 }
 
-export async function bulkCreateQuestions(data: Record<string, unknown>[]) {
-  const res = await axiosClient.post("/admin/questions/bulk", data);
+/** CSV bulk upload — multipart `file` field (routes/questionAdminRoutes.js). All-or-nothing on the backend. */
+export async function uploadQuestionsCsv(file: File) {
+  const fd = new FormData();
+  fd.append("file", file);
+  const res = await axiosClient.post("/admin/questions/bulk", fd);
   return res.data;
 }
 
 export async function updateQuestion(id: string, data: Record<string, unknown>) {
   const res = await axiosClient.patch(`/admin/questions/${id}`, data);
+  return res.data;
+}
+
+export async function restoreQuestion(id: string) {
+  const res = await axiosClient.patch(`/admin/questions/${id}`, { isActive: true });
   return res.data;
 }
 
