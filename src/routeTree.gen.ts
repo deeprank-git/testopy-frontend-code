@@ -50,6 +50,8 @@ import { Route as AuthenticatedDashboardAttemptedTestsRouteImport } from './rout
 import { Route as AuthenticatedDashboardAnswerKeyRouteImport } from './routes/_authenticated/dashboard.answer-key'
 import { Route as AdminDashboardExamsCategoryIdIndexRouteImport } from './routes/admin-dashboard.exams.$categoryId.index'
 import { Route as AuthenticatedDashboardCurrentAffairsIdRouteImport } from './routes/_authenticated/dashboard.current-affairs.$id'
+import { Route as AdminDashboardExamsCategoryIdSeriesIdIndexRouteImport } from './routes/admin-dashboard.exams.$categoryId.$seriesId.index'
+import { Route as AdminDashboardExamsCategoryIdSeriesIdTestIdRouteImport } from './routes/admin-dashboard.exams.$categoryId.$seriesId.$testId'
 
 const ExamsRoute = ExamsRouteImport.update({
   id: '/exams',
@@ -272,6 +274,18 @@ const AuthenticatedDashboardCurrentAffairsIdRoute =
     path: '/$id',
     getParentRoute: () => AuthenticatedDashboardCurrentAffairsRoute,
   } as any)
+const AdminDashboardExamsCategoryIdSeriesIdIndexRoute =
+  AdminDashboardExamsCategoryIdSeriesIdIndexRouteImport.update({
+    id: '/exams/$categoryId/$seriesId/',
+    path: '/exams/$categoryId/$seriesId/',
+    getParentRoute: () => AdminDashboardRoute,
+  } as any)
+const AdminDashboardExamsCategoryIdSeriesIdTestIdRoute =
+  AdminDashboardExamsCategoryIdSeriesIdTestIdRouteImport.update({
+    id: '/exams/$categoryId/$seriesId/$testId',
+    path: '/exams/$categoryId/$seriesId/$testId',
+    getParentRoute: () => AdminDashboardRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -314,6 +328,8 @@ export interface FileRoutesByFullPath {
   '/admin-dashboard/exams/': typeof AdminDashboardExamsIndexRoute
   '/dashboard/current-affairs/$id': typeof AuthenticatedDashboardCurrentAffairsIdRoute
   '/admin-dashboard/exams/$categoryId/': typeof AdminDashboardExamsCategoryIdIndexRoute
+  '/admin-dashboard/exams/$categoryId/$seriesId/$testId': typeof AdminDashboardExamsCategoryIdSeriesIdTestIdRoute
+  '/admin-dashboard/exams/$categoryId/$seriesId/': typeof AdminDashboardExamsCategoryIdSeriesIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -354,6 +370,8 @@ export interface FileRoutesByTo {
   '/admin-dashboard/exams': typeof AdminDashboardExamsIndexRoute
   '/dashboard/current-affairs/$id': typeof AuthenticatedDashboardCurrentAffairsIdRoute
   '/admin-dashboard/exams/$categoryId': typeof AdminDashboardExamsCategoryIdIndexRoute
+  '/admin-dashboard/exams/$categoryId/$seriesId/$testId': typeof AdminDashboardExamsCategoryIdSeriesIdTestIdRoute
+  '/admin-dashboard/exams/$categoryId/$seriesId': typeof AdminDashboardExamsCategoryIdSeriesIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -398,6 +416,8 @@ export interface FileRoutesById {
   '/admin-dashboard/exams/': typeof AdminDashboardExamsIndexRoute
   '/_authenticated/dashboard/current-affairs/$id': typeof AuthenticatedDashboardCurrentAffairsIdRoute
   '/admin-dashboard/exams/$categoryId/': typeof AdminDashboardExamsCategoryIdIndexRoute
+  '/admin-dashboard/exams/$categoryId/$seriesId/$testId': typeof AdminDashboardExamsCategoryIdSeriesIdTestIdRoute
+  '/admin-dashboard/exams/$categoryId/$seriesId/': typeof AdminDashboardExamsCategoryIdSeriesIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -442,6 +462,8 @@ export interface FileRouteTypes {
     | '/admin-dashboard/exams/'
     | '/dashboard/current-affairs/$id'
     | '/admin-dashboard/exams/$categoryId/'
+    | '/admin-dashboard/exams/$categoryId/$seriesId/$testId'
+    | '/admin-dashboard/exams/$categoryId/$seriesId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -482,6 +504,8 @@ export interface FileRouteTypes {
     | '/admin-dashboard/exams'
     | '/dashboard/current-affairs/$id'
     | '/admin-dashboard/exams/$categoryId'
+    | '/admin-dashboard/exams/$categoryId/$seriesId/$testId'
+    | '/admin-dashboard/exams/$categoryId/$seriesId'
   id:
     | '__root__'
     | '/'
@@ -525,6 +549,8 @@ export interface FileRouteTypes {
     | '/admin-dashboard/exams/'
     | '/_authenticated/dashboard/current-affairs/$id'
     | '/admin-dashboard/exams/$categoryId/'
+    | '/admin-dashboard/exams/$categoryId/$seriesId/$testId'
+    | '/admin-dashboard/exams/$categoryId/$seriesId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -828,6 +854,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardCurrentAffairsIdRouteImport
       parentRoute: typeof AuthenticatedDashboardCurrentAffairsRoute
     }
+    '/admin-dashboard/exams/$categoryId/$seriesId/': {
+      id: '/admin-dashboard/exams/$categoryId/$seriesId/'
+      path: '/exams/$categoryId/$seriesId'
+      fullPath: '/admin-dashboard/exams/$categoryId/$seriesId/'
+      preLoaderRoute: typeof AdminDashboardExamsCategoryIdSeriesIdIndexRouteImport
+      parentRoute: typeof AdminDashboardRoute
+    }
+    '/admin-dashboard/exams/$categoryId/$seriesId/$testId': {
+      id: '/admin-dashboard/exams/$categoryId/$seriesId/$testId'
+      path: '/exams/$categoryId/$seriesId/$testId'
+      fullPath: '/admin-dashboard/exams/$categoryId/$seriesId/$testId'
+      preLoaderRoute: typeof AdminDashboardExamsCategoryIdSeriesIdTestIdRouteImport
+      parentRoute: typeof AdminDashboardRoute
+    }
   }
 }
 
@@ -913,6 +953,8 @@ interface AdminDashboardRouteChildren {
   AdminDashboardIndexRoute: typeof AdminDashboardIndexRoute
   AdminDashboardExamsIndexRoute: typeof AdminDashboardExamsIndexRoute
   AdminDashboardExamsCategoryIdIndexRoute: typeof AdminDashboardExamsCategoryIdIndexRoute
+  AdminDashboardExamsCategoryIdSeriesIdTestIdRoute: typeof AdminDashboardExamsCategoryIdSeriesIdTestIdRoute
+  AdminDashboardExamsCategoryIdSeriesIdIndexRoute: typeof AdminDashboardExamsCategoryIdSeriesIdIndexRoute
 }
 
 const AdminDashboardRouteChildren: AdminDashboardRouteChildren = {
@@ -932,6 +974,10 @@ const AdminDashboardRouteChildren: AdminDashboardRouteChildren = {
   AdminDashboardExamsIndexRoute: AdminDashboardExamsIndexRoute,
   AdminDashboardExamsCategoryIdIndexRoute:
     AdminDashboardExamsCategoryIdIndexRoute,
+  AdminDashboardExamsCategoryIdSeriesIdTestIdRoute:
+    AdminDashboardExamsCategoryIdSeriesIdTestIdRoute,
+  AdminDashboardExamsCategoryIdSeriesIdIndexRoute:
+    AdminDashboardExamsCategoryIdSeriesIdIndexRoute,
 }
 
 const AdminDashboardRouteWithChildren = AdminDashboardRoute._addFileChildren(
