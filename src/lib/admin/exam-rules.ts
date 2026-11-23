@@ -12,7 +12,13 @@ export type SectionDraft = {
 export type QuestionLike = { section: string; isActive?: boolean };
 
 export type FillStatus = "empty" | "partial" | "full" | "over";
-export type SectionFill = { id: string; name: string; planned: number; filled: number; status: FillStatus };
+export type SectionFill = {
+  id: string;
+  name: string;
+  planned: number;
+  filled: number;
+  status: FillStatus;
+};
 
 const num = (v: unknown) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 
@@ -51,7 +57,10 @@ export function canPublishTest(
   for (const s of sectionFill(sections, questions)) {
     const missing = s.planned - s.filled;
     if (missing > 0) {
-      return { ok: false, reason: `${s.name} needs ${missing} more question${missing === 1 ? "" : "s"}` };
+      return {
+        ok: false,
+        reason: `${s.name} needs ${missing} more question${missing === 1 ? "" : "s"}`,
+      };
     }
   }
   return { ok: true };
@@ -103,7 +112,11 @@ export function validateQuestionForm(f: QuestionForm): Partial<Record<keyof Ques
     const blank = f.options.findIndex((o) => !o.trim());
     if (blank !== -1) errors.options = `Option ${OPTION_LETTERS[blank]} is empty`;
   }
-  if (!Number.isInteger(f.correctAnswer) || f.correctAnswer < 0 || f.correctAnswer >= f.options.length) {
+  if (
+    !Number.isInteger(f.correctAnswer) ||
+    f.correctAnswer < 0 ||
+    f.correctAnswer >= f.options.length
+  ) {
     errors.correctAnswer = "Mark the correct answer";
   }
   if (!(num(f.marks) > 0)) errors.marks = "Marks must be greater than 0";

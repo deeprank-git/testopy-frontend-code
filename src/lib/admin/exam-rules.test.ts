@@ -19,7 +19,9 @@ describe("sectionTotals", () => {
     expect(sectionTotals(sections)).toEqual({ questions: 3, marks: 6, duration: 15 });
   });
   it("treats blank/NaN inputs as 0", () => {
-    expect(sectionTotals([{ name: "x", no_of_questions: NaN, no_of_marks: 0, duration: 0 }])).toEqual({
+    expect(
+      sectionTotals([{ name: "x", no_of_questions: NaN, no_of_marks: 0, duration: 0 }]),
+    ).toEqual({
       questions: 0,
       marks: 0,
       duration: 0,
@@ -75,7 +77,12 @@ describe("validateSections", () => {
   });
   it("rejects duplicate names (CSV upload matches sections by name)", () => {
     const s = { no_of_questions: 1, no_of_marks: 1, duration: 1 };
-    expect(validateSections([{ name: "A", ...s }, { name: "a ", ...s }])).toBe('Duplicate section name "a"');
+    expect(
+      validateSections([
+        { name: "A", ...s },
+        { name: "a ", ...s },
+      ]),
+    ).toBe('Duplicate section name "a"');
   });
   it("returns null when valid", () => {
     expect(validateSections(sections)).toBeNull();
@@ -93,7 +100,12 @@ describe("validateQuestionForm", () => {
     expect(validateQuestionForm(valid)).toEqual({});
   });
   it("flags missing fields", () => {
-    const errors = validateQuestionForm({ ...valid, section: "", questionText: "  ", options: ["a", "", "c", "d"] });
+    const errors = validateQuestionForm({
+      ...valid,
+      section: "",
+      questionText: "  ",
+      options: ["a", "", "c", "d"],
+    });
     expect(errors).toEqual({
       section: "Pick a section",
       questionText: "Question text is required",
@@ -101,8 +113,12 @@ describe("validateQuestionForm", () => {
     });
   });
   it("requires 4 or 5 options and a correct answer within range", () => {
-    expect(validateQuestionForm({ ...valid, options: ["a", "b", "c"] }).options).toBe("Use 4 or 5 options");
-    expect(validateQuestionForm({ ...valid, correctAnswer: 4 }).correctAnswer).toBe("Mark the correct answer");
+    expect(validateQuestionForm({ ...valid, options: ["a", "b", "c"] }).options).toBe(
+      "Use 4 or 5 options",
+    );
+    expect(validateQuestionForm({ ...valid, correctAnswer: 4 }).correctAnswer).toBe(
+      "Mark the correct answer",
+    );
   });
   it("requires positive marks", () => {
     expect(validateQuestionForm({ ...valid, marks: 0 }).marks).toBe("Marks must be greater than 0");
