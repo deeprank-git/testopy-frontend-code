@@ -1,5 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
@@ -33,11 +33,13 @@ import {
   filterAlerts,
   formatAlertDate,
   upcomingSoon,
+  withAlertCategories,
   type AlertFilters,
   type AlertType,
   type ExamAlert,
 } from "@/lib/exam-alerts";
 import { isExternalLink } from "@/lib/notifications";
+import { AppLink } from "@/components/site/AppLink";
 import * as examAlertService from "@/services/examAlertService";
 import * as categoryService from "@/services/categoryService";
 
@@ -85,6 +87,20 @@ function AlertsPage() {
     queryFn: () => categoryService.getCategories(),
   });
   const categories = unwrapList<{ _id: string; name: string }>(categoriesRes);
+  // Archived categories still on an alert stay filterable.
+  const categoryOptions = useMemo(
+    () => withAlertCategories(categories, alerts),
+    [categories, alerts],
+  );
+
+  // "View All" on the Upcoming card: show every upcoming alert in the main list.
+  const listRef = useRef<HTMLDivElement>(null);
+  const showUpcoming = () => {
+    setTab("all");
+    setFilters({ ...EMPTY_FILTERS, status: "upcoming" });
+    setPage(1);
+    listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const setFilter = <K extends keyof SideFilters>(key: K, value: SideFilters[K]) => {
     setFilters((f) => ({ ...f, [key]: value }));
@@ -144,7 +160,7 @@ function AlertsPage() {
                   <SelectTrigger><SelectValue placeholder="All Categories" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Categories</SelectItem>
-                    {categories.map((c) => <SelectItem key={c._id} value={c._id}>{c.name}</SelectItem>)}
+                    {categoryOptions.map((c) => <SelectItem key={c._id} value={c._id}>{c.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </FilterField>
@@ -186,7 +202,7 @@ function AlertsPage() {
             </div>
           </Card>
 
-          <Card>
+          <Card ref={listRef}>
             <div className="border-b border-border px-4">
               <div className="flex items-center gap-6 overflow-x-auto">
                 {TABS.map((t) => {
@@ -260,13 +276,12 @@ function AlertsPage() {
                     </div>
                     {a.link && (
                       <Button asChild size="sm" variant="outline" className="text-primary border-primary/30 hover:bg-primary/5">
-                        {isExternalLink(a.link) ? (
-                          <a href={a.link} target="_blank" rel="noopener noreferrer">
-                            View details <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
-                          </a>
-                        ) : (
-                          <Link to={a.link as never}>View details</Link>
-                        )}
+                        <AppLink href={a.link}>
+                          View details
+                          {isExternalLink(a.link) && (
+                            <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
+                          )}
+                        </AppLink>
                       </Button>
                     )}
                   </motion.div>
@@ -299,7 +314,13 @@ function AlertsPage() {
           <Card className="p-4">
             <div className="flex items-center justify-between mb-3">
               <span className="font-display font-bold text-sm">Upcoming</span>
-              <Link to="/exams" className="text-xs text-primary hover:underline">View All</Link>
+              <button
+                type="button"
+                onClick={showUpcoming}
+                className="text-xs text-primary hover:underline"
+              >
+                View All
+              </button>
             </div>
             <ul className="space-y-3">
               {upcoming.map((u) => {

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { CalendarClock, ExternalLink, MoreHorizontal, Plus } from "lucide-react";
+import { CalendarClock, ExternalLink, Link2, MoreHorizontal, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,6 +43,8 @@ import { LoadingRows } from "@/components/admin/LoadingRows";
 import { AdminPager } from "@/components/admin/AdminPager";
 import { ConfirmDeleteDialog } from "@/components/admin/ConfirmDeleteDialog";
 import { ExamAlertDrawer } from "@/components/admin/ExamAlertDrawer";
+import { AppLink } from "@/components/site/AppLink";
+import { isExternalLink } from "@/lib/notifications";
 
 export const Route = createFileRoute("/admin-dashboard/exam-alerts")({
   component: ExamAlertsAdminPage,
@@ -245,15 +247,17 @@ function ExamAlertsAdminPage() {
                       </TableCell>
                       <TableCell>
                         {a.link ? (
-                          <a
+                          <AppLink
                             href={a.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
                             aria-label={`Open link for ${a.title}`}
                             className="text-primary"
                           >
-                            <ExternalLink className="size-4" />
-                          </a>
+                            {isExternalLink(a.link) ? (
+                              <ExternalLink className="size-4" />
+                            ) : (
+                              <Link2 className="size-4" />
+                            )}
+                          </AppLink>
                         ) : (
                           <span className="text-muted-foreground">—</span>
                         )}
