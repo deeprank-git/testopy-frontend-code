@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
@@ -18,7 +18,6 @@ import {
   Edit3,
   ExternalLink,
   IdCard,
-  Lightbulb,
   Megaphone,
   RotateCcw,
   Sparkles,
@@ -29,10 +28,8 @@ import {
   ALERT_TYPE_META,
   alertStats,
   alertStatus,
-  daysUntilLabel,
   filterAlerts,
   formatAlertDate,
-  upcomingSoon,
   withAlertCategories,
   type AlertFilters,
   type AlertType,
@@ -93,15 +90,6 @@ function AlertsPage() {
     [categories, alerts],
   );
 
-  // "View All" on the Upcoming card: show every upcoming alert in the main list.
-  const listRef = useRef<HTMLDivElement>(null);
-  const showUpcoming = () => {
-    setTab("all");
-    setFilters({ ...EMPTY_FILTERS, status: "upcoming" });
-    setPage(1);
-    listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-
   const setFilter = <K extends keyof SideFilters>(key: K, value: SideFilters[K]) => {
     setFilters((f) => ({ ...f, [key]: value }));
     setPage(1);
@@ -114,7 +102,6 @@ function AlertsPage() {
   const filtered = useMemo(() => filterAlerts(alerts, { tab, ...filters }), [alerts, tab, filters]);
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const upcoming = useMemo(() => upcomingSoon(alerts, 4), [alerts]);
   const stats = useMemo(() => alertStats(alerts), [alerts]);
 
   const STATS = [
@@ -151,7 +138,7 @@ function AlertsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-5">
+      <div>
         <div className="space-y-5">
           <Card className="p-4">
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 items-end">
@@ -202,7 +189,7 @@ function AlertsPage() {
             </div>
           </Card>
 
-          <Card ref={listRef}>
+          <Card>
             <div className="border-b border-border px-4">
               <div className="flex items-center gap-6 overflow-x-auto">
                 {TABS.map((t) => {
@@ -307,54 +294,6 @@ function AlertsPage() {
                 </div>
               </div>
             )}
-          </Card>
-        </div>
-
-        <div className="space-y-4">
-          <Card className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <span className="font-display font-bold text-sm">Upcoming</span>
-              <button
-                type="button"
-                onClick={showUpcoming}
-                className="text-xs text-primary hover:underline"
-              >
-                View All
-              </button>
-            </div>
-            <ul className="space-y-3">
-              {upcoming.map((u) => {
-                const d = new Date(u.date);
-                return (
-                  <li key={u._id} className="flex items-center gap-3">
-                    <div className="h-11 w-11 rounded-lg bg-blue-50 grid place-items-center text-center">
-                      <div className="leading-none">
-                        <div className="text-[10px] font-bold text-blue-600 uppercase">{d.toLocaleString("en", { month: "short", timeZone: "UTC" })}</div>
-                        <div className="text-sm font-extrabold text-blue-700">{d.getUTCDate()}</div>
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-xs truncate">{u.title}</div>
-                      <div className="text-[11px] text-muted-foreground">{formatAlertDate(u.date)}</div>
-                    </div>
-                    <Badge className="bg-blue-100 text-blue-700 border-0 hover:bg-blue-100 text-[10px]">{daysUntilLabel(u)}</Badge>
-                  </li>
-                );
-              })}
-              {upcoming.length === 0 && <li className="text-xs text-muted-foreground">Nothing upcoming.</li>}
-            </ul>
-          </Card>
-
-          <Card className="p-4 bg-primary/5 border-primary/20">
-            <div className="flex items-start gap-2">
-              <Lightbulb className="h-5 w-5 text-primary mt-0.5" />
-              <div>
-                <div className="font-display font-bold text-sm">Important Tip</div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Important new alerts also show up in your notification bell at the top of the page, so check it regularly.
-                </p>
-              </div>
-            </div>
           </Card>
         </div>
       </div>
