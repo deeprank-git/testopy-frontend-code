@@ -120,3 +120,19 @@ export function upcomingSoon(alerts: ExamAlert[], limit = 4, now: Date = new Dat
     .sort((x, y) => alertDay(x).localeCompare(alertDay(y)))
     .slice(0, limit);
 }
+
+/** Active categories plus any (e.g. archived) category still used by an alert, so filters can find it. */
+export function withAlertCategories(
+  categories: { _id: string; name: string }[],
+  alerts: Pick<ExamAlert, "category">[],
+): { _id: string; name: string }[] {
+  const out = [...categories];
+  const seen = new Set(categories.map((c) => c._id));
+  for (const { category } of alerts) {
+    if (category && !seen.has(category._id)) {
+      seen.add(category._id);
+      out.push({ _id: category._id, name: category.name });
+    }
+  }
+  return out;
+}

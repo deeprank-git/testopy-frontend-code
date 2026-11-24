@@ -19,6 +19,7 @@ import {
   ALERT_TYPES,
   ALERT_TYPE_META,
   alertDay,
+  withAlertCategories,
   type AlertType,
   type ExamAlert,
 } from "@/lib/exam-alerts";
@@ -83,10 +84,7 @@ export function ExamAlertDrawer({
   }, [open, alert]);
 
   // Keep an alert's current category selectable even if it is archived.
-  const categoryOptions =
-    alert?.category && !categories.some((c) => c._id === alert.category!._id)
-      ? [...categories, alert.category]
-      : categories;
+  const categoryOptions = withAlertCategories(categories, alert ? [alert] : []);
 
   const set = <K extends keyof Form>(key: K, value: Form[K]) =>
     setForm((f) => ({ ...f, [key]: value }));

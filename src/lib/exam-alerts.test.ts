@@ -7,6 +7,7 @@ import {
   filterAlerts,
   formatAlertDate,
   upcomingSoon,
+  withAlertCategories,
   type AlertFilters,
   type ExamAlert,
 } from "./exam-alerts";
@@ -108,5 +109,21 @@ describe("upcomingSoon", () => {
       alert({ _id: "mid", date: "2026-12-01T00:00:00.000Z" }),
     ];
     expect(upcomingSoon(rows, 2, NOW).map((a) => a._id)).toEqual(["soon", "mid"]);
+  });
+});
+
+describe("withAlertCategories", () => {
+  it("adds categories that only appear on alerts (e.g. archived), once, after the active ones", () => {
+    const active = [{ _id: "c1", name: "SSC" }];
+    const alerts = [
+      alert({ category: { _id: "c1", name: "SSC" } }),
+      alert({ category: { _id: "c9", name: "Old" } }),
+      alert({ category: { _id: "c9", name: "Old" } }),
+      alert({ category: null }),
+    ];
+    expect(withAlertCategories(active, alerts)).toEqual([
+      { _id: "c1", name: "SSC" },
+      { _id: "c9", name: "Old" },
+    ]);
   });
 });
