@@ -104,7 +104,10 @@ export const NOTIFICATION_FILTERS: { value: NotificationsFilter; label: string }
 ];
 
 export const notificationsSearchSchema = z.object({
-  filter: z.enum([...NOTIFICATION_TYPES, "exam_alert"]).optional().catch(undefined),
+  filter: z
+    .enum([...NOTIFICATION_TYPES, "exam_alert"])
+    .optional()
+    .catch(undefined),
   unread: z.literal(true).optional().catch(undefined),
 });
 

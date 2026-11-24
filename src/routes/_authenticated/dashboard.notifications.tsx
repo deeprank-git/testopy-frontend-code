@@ -88,7 +88,9 @@ function NotificationsPage() {
         <h1 className="flex items-center gap-2 font-display text-2xl font-extrabold">
           Notifications <Bell className="h-5 w-5 text-primary" />
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">Everything we've sent you, newest first.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Everything we've sent you, newest first.
+        </p>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -176,7 +178,9 @@ function NotificationsPage() {
             />
             <div className="min-w-0 flex-1">
               <div className={cn("text-sm", !n.isRead && "font-semibold")}>{n.title}</div>
-              <div className="mt-0.5 whitespace-pre-line text-sm text-muted-foreground">{n.message}</div>
+              <div className="mt-0.5 whitespace-pre-line text-sm text-muted-foreground">
+                {n.message}
+              </div>
               <div className="mt-1.5 flex items-center gap-2 text-[11px] text-muted-foreground">
                 <Badge variant="secondary" className="text-[10px]">
                   {n.source === "exam_alert" ? "Exam alert" : (TYPE_LABEL[n.type] ?? "Info")}
@@ -190,7 +194,11 @@ function NotificationsPage() {
 
       {query.hasNextPage && (
         <div className="flex justify-center">
-          <Button variant="outline" onClick={() => query.fetchNextPage()} disabled={query.isFetchingNextPage}>
+          <Button
+            variant="outline"
+            onClick={() => query.fetchNextPage()}
+            disabled={query.isFetchingNextPage}
+          >
             {query.isFetchingNextPage ? "Loading…" : "Load more"}
           </Button>
         </div>

@@ -97,10 +97,18 @@ describe("markReadInPayload", () => {
 
 describe("splitInAppLink", () => {
   it("keeps the query string and hash of an in-app path", () => {
-    expect(splitInAppLink("/x?y=1&z=a%20b#h")).toEqual({ to: "/x", search: { y: "1", z: "a b" }, hash: "h" });
+    expect(splitInAppLink("/x?y=1&z=a%20b#h")).toEqual({
+      to: "/x",
+      search: { y: "1", z: "a b" },
+      hash: "h",
+    });
   });
   it("handles a bare path", () => {
-    expect(splitInAppLink("/dashboard/exam-alerts")).toEqual({ to: "/dashboard/exam-alerts", search: {}, hash: undefined });
+    expect(splitInAppLink("/dashboard/exam-alerts")).toEqual({
+      to: "/dashboard/exam-alerts",
+      search: {},
+      hash: undefined,
+    });
   });
 });
 
@@ -114,8 +122,14 @@ describe("filterToParams", () => {
 
 describe("notificationsSearchSchema", () => {
   it("accepts known values and drops unknown ones", () => {
-    expect(notificationsSearchSchema.parse({ filter: "offer", unread: true })).toEqual({ filter: "offer", unread: true });
-    expect(notificationsSearchSchema.parse({ filter: "bogus", unread: "yes" })).toEqual({ filter: undefined, unread: undefined });
+    expect(notificationsSearchSchema.parse({ filter: "offer", unread: true })).toEqual({
+      filter: "offer",
+      unread: true,
+    });
+    expect(notificationsSearchSchema.parse({ filter: "bogus", unread: "yes" })).toEqual({
+      filter: undefined,
+      unread: undefined,
+    });
     expect(notificationsSearchSchema.parse({})).toEqual({});
   });
 });

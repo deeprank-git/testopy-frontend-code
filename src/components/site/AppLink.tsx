@@ -16,14 +16,26 @@ export function AppLink({
 }) {
   if (isExternalLink(href)) {
     return (
-      <a href={href} target="_blank" rel="noopener noreferrer" className={className} aria-label={ariaLabel}>
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={className}
+        aria-label={ariaLabel}
+      >
         {children}
       </a>
     );
   }
   const { to, search, hash } = splitInAppLink(href);
   return (
-    <Link to={to as never} search={search as never} hash={hash} className={className} aria-label={ariaLabel}>
+    <Link
+      to={to as never}
+      search={search as never}
+      hash={hash}
+      className={className}
+      aria-label={ariaLabel}
+    >
       {children}
     </Link>
   );
