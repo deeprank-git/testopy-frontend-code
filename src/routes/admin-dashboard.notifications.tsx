@@ -1,6 +1,6 @@
 import { createFileRoute, useBlocker } from "@tanstack/react-router";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { BellRing, Check, ChevronsUpDown, MoreHorizontal, Send } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -42,7 +42,6 @@ import { isValidLink, type NotificationSource, type NotificationType } from "@/l
 import { cn } from "@/lib/utils";
 import * as notificationService from "@/services/notificationService";
 import * as userService from "@/services/userService";
-import { usePaginatedSearch } from "@/hooks/use-paginated-search";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { useBreadcrumbs } from "@/components/admin/breadcrumbs";
@@ -123,16 +122,26 @@ function NotificationsPage() {
   });
   const students = unwrapList<Student>(studentsQuery.data);
 
+  // Sent list pages and searches on the server, so older notifications stay reachable.
+  const [search, setSearchRaw] = useState("");
+  const [page, setPage] = useState(1);
+  const sentSearch = useDebouncedValue(search.trim());
+  const setSearch = (v: string) => {
+    setSearchRaw(v);
+    setPage(1);
+  };
   const sentQuery = useQuery({
-    queryKey: ["admin", "notifications"],
-    queryFn: () => notificationService.adminGetNotifications({ limit: 100 }),
+    queryKey: ["admin", "notifications", { page, search: sentSearch }],
+    queryFn: () =>
+      notificationService.adminGetNotifications({ page, search: sentSearch || undefined }),
+    placeholderData: keepPreviousData,
   });
-  const sent = unwrapList<SentNotification>(sentQuery.data);
-  const { search, setSearch, paginated, page, setPage, totalPages } = usePaginatedSearch(
-    sent as unknown as Record<string, unknown>[],
-    ["title", "message"],
-  );
-  const rows = paginated as unknown as SentNotification[];
+  const rows = unwrapList<SentNotification>(sentQuery.data);
+  const totalPages: number = sentQuery.data?.totalPages ?? 1;
+  // Deleting the last row of the last page leaves us past the end: step back.
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
 
   const errors = {
     title: form.title.trim() ? undefined : "Title is required",
@@ -354,7 +363,7 @@ function NotificationsPage() {
             <div className="p-6">
               <EmptyState
                 icon={BellRing}
-                title={search ? `No notifications match "${search}"` : "Nothing sent yet"}
+                title={sentSearch ? `No notifications match "${sentSearch}"` : "Nothing sent yet"}
               />
             </div>
           ) : (
