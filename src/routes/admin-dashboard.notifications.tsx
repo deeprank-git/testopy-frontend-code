@@ -1,5 +1,5 @@
 import { createFileRoute, useBlocker } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { BellRing, Check, ChevronsUpDown, MoreHorizontal, Send } from "lucide-react";
 import { toast } from "sonner";
@@ -17,7 +17,6 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Command,
-  CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
@@ -44,6 +43,7 @@ import { cn } from "@/lib/utils";
 import * as notificationService from "@/services/notificationService";
 import * as userService from "@/services/userService";
 import { usePaginatedSearch } from "@/hooks/use-paginated-search";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { useBreadcrumbs } from "@/components/admin/breadcrumbs";
 import { DataCard, SearchInput } from "@/components/admin/DataCard";
@@ -92,6 +92,7 @@ type Form = {
   link: string;
 };
 const EMPTY: Form = { title: "", message: "", type: "info", recipient: null, link: "" };
+const PICKER_LIMIT = 20;
 
 const studentLabel = (s: Student) => (s.name ? `${s.name} (${s.email})` : s.email);
 
@@ -106,11 +107,21 @@ function NotificationsPage() {
   const set = <K extends keyof Form>(key: K, value: Form[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
 
-  const { data: usersRes } = useQuery({
-    queryKey: ["admin", "notify-students"],
-    queryFn: () => userService.getAllUsers({ role: "student" }),
+  // Recipient picker searches on the server, so it stays fast with many students.
+  const [pickerSearch, setPickerSearch] = useState("");
+  const studentSearch = useDebouncedValue(pickerSearch.trim());
+  const studentsQuery = useQuery({
+    queryKey: ["admin", "notify-students", studentSearch],
+    queryFn: () =>
+      userService.getAllUsers({
+        role: "student",
+        search: studentSearch || undefined,
+        limit: PICKER_LIMIT,
+      }),
+    enabled: pickerOpen,
+    placeholderData: keepPreviousData,
   });
-  const students = unwrapList<Student>(usersRes);
+  const students = unwrapList<Student>(studentsQuery.data);
 
   const sentQuery = useQuery({
     queryKey: ["admin", "notifications"],
@@ -227,7 +238,13 @@ function NotificationsPage() {
             </div>
             <div className="space-y-2">
               <Label>Recipient</Label>
-              <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+              <Popover
+                open={pickerOpen}
+                onOpenChange={(o) => {
+                  setPickerOpen(o);
+                  if (!o) setPickerSearch("");
+                }}
+              >
                 <PopoverTrigger asChild>
                   <Button
                     type="button"
@@ -246,10 +263,14 @@ function NotificationsPage() {
                   className="w-[var(--radix-popover-trigger-width)] p-0"
                   align="start"
                 >
-                  <Command>
-                    <CommandInput placeholder="Search students…" />
+                  {/* shouldFilter off: the server already filtered by the search text. */}
+                  <Command shouldFilter={false}>
+                    <CommandInput
+                      placeholder="Search students by name or email…"
+                      value={pickerSearch}
+                      onValueChange={setPickerSearch}
+                    />
                     <CommandList>
-                      <CommandEmpty>No students found.</CommandEmpty>
                       <CommandGroup>
                         <CommandItem
                           value="__all__ all students"
@@ -282,6 +303,19 @@ function NotificationsPage() {
                           </CommandItem>
                         ))}
                       </CommandGroup>
+                      <div className="px-3 py-2 text-xs text-muted-foreground">
+                        {studentsQuery.isFetching
+                          ? "Searching…"
+                          : studentsQuery.isError
+                            ? "Couldn't load students"
+                            : students.length === 0
+                              ? studentSearch
+                                ? "No students match"
+                                : "No students yet"
+                              : students.length >= PICKER_LIMIT
+                                ? `Showing the first ${PICKER_LIMIT}. Type to narrow down.`
+                                : null}
+                      </div>
                     </CommandList>
                   </Command>
                 </PopoverContent>
