@@ -1,8 +1,16 @@
 import axiosClient from "@/api/axiosClient";
-import type { MyNotificationsPayload, NotificationType } from "@/lib/notifications";
+import type {
+  MyNotificationsPayload,
+  NotificationSource,
+  NotificationType,
+} from "@/lib/notifications";
 
 export async function getMyNotifications(params?: {
   limit?: number;
+  type?: NotificationType;
+  source?: NotificationSource;
+  unread?: 1;
+  before?: string;
 }): Promise<MyNotificationsPayload> {
   const res = await axiosClient.get("/notifications/me", { params });
   return res.data;
