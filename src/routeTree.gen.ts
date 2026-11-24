@@ -44,6 +44,7 @@ import { Route as AuthenticatedResultAttemptIdRouteImport } from './routes/_auth
 import { Route as AuthenticatedDashboardRankRouteImport } from './routes/_authenticated/dashboard.rank'
 import { Route as AuthenticatedDashboardProfileRouteImport } from './routes/_authenticated/dashboard.profile'
 import { Route as AuthenticatedDashboardPreviousYearPapersRouteImport } from './routes/_authenticated/dashboard.previous-year-papers'
+import { Route as AuthenticatedDashboardNotificationsRouteImport } from './routes/_authenticated/dashboard.notifications'
 import { Route as AuthenticatedDashboardMockTestsRouteImport } from './routes/_authenticated/dashboard.mock-tests'
 import { Route as AuthenticatedDashboardExamAlertsRouteImport } from './routes/_authenticated/dashboard.exam-alerts'
 import { Route as AuthenticatedDashboardCurrentAffairsRouteImport } from './routes/_authenticated/dashboard.current-affairs'
@@ -239,6 +240,12 @@ const AuthenticatedDashboardPreviousYearPapersRoute =
     path: '/previous-year-papers',
     getParentRoute: () => AuthenticatedDashboardRoute,
   } as any)
+const AuthenticatedDashboardNotificationsRoute =
+  AuthenticatedDashboardNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AuthenticatedDashboardRoute,
+  } as any)
 const AuthenticatedDashboardMockTestsRoute =
   AuthenticatedDashboardMockTestsRouteImport.update({
     id: '/mock-tests',
@@ -327,6 +334,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/current-affairs': typeof AuthenticatedDashboardCurrentAffairsRouteWithChildren
   '/dashboard/exam-alerts': typeof AuthenticatedDashboardExamAlertsRoute
   '/dashboard/mock-tests': typeof AuthenticatedDashboardMockTestsRoute
+  '/dashboard/notifications': typeof AuthenticatedDashboardNotificationsRoute
   '/dashboard/previous-year-papers': typeof AuthenticatedDashboardPreviousYearPapersRoute
   '/dashboard/profile': typeof AuthenticatedDashboardProfileRoute
   '/dashboard/rank': typeof AuthenticatedDashboardRankRoute
@@ -370,6 +378,7 @@ export interface FileRoutesByTo {
   '/dashboard/current-affairs': typeof AuthenticatedDashboardCurrentAffairsRouteWithChildren
   '/dashboard/exam-alerts': typeof AuthenticatedDashboardExamAlertsRoute
   '/dashboard/mock-tests': typeof AuthenticatedDashboardMockTestsRoute
+  '/dashboard/notifications': typeof AuthenticatedDashboardNotificationsRoute
   '/dashboard/previous-year-papers': typeof AuthenticatedDashboardPreviousYearPapersRoute
   '/dashboard/profile': typeof AuthenticatedDashboardProfileRoute
   '/dashboard/rank': typeof AuthenticatedDashboardRankRoute
@@ -417,6 +426,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard/current-affairs': typeof AuthenticatedDashboardCurrentAffairsRouteWithChildren
   '/_authenticated/dashboard/exam-alerts': typeof AuthenticatedDashboardExamAlertsRoute
   '/_authenticated/dashboard/mock-tests': typeof AuthenticatedDashboardMockTestsRoute
+  '/_authenticated/dashboard/notifications': typeof AuthenticatedDashboardNotificationsRoute
   '/_authenticated/dashboard/previous-year-papers': typeof AuthenticatedDashboardPreviousYearPapersRoute
   '/_authenticated/dashboard/profile': typeof AuthenticatedDashboardProfileRoute
   '/_authenticated/dashboard/rank': typeof AuthenticatedDashboardRankRoute
@@ -464,6 +474,7 @@ export interface FileRouteTypes {
     | '/dashboard/current-affairs'
     | '/dashboard/exam-alerts'
     | '/dashboard/mock-tests'
+    | '/dashboard/notifications'
     | '/dashboard/previous-year-papers'
     | '/dashboard/profile'
     | '/dashboard/rank'
@@ -507,6 +518,7 @@ export interface FileRouteTypes {
     | '/dashboard/current-affairs'
     | '/dashboard/exam-alerts'
     | '/dashboard/mock-tests'
+    | '/dashboard/notifications'
     | '/dashboard/previous-year-papers'
     | '/dashboard/profile'
     | '/dashboard/rank'
@@ -553,6 +565,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard/current-affairs'
     | '/_authenticated/dashboard/exam-alerts'
     | '/_authenticated/dashboard/mock-tests'
+    | '/_authenticated/dashboard/notifications'
     | '/_authenticated/dashboard/previous-year-papers'
     | '/_authenticated/dashboard/profile'
     | '/_authenticated/dashboard/rank'
@@ -825,6 +838,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardPreviousYearPapersRouteImport
       parentRoute: typeof AuthenticatedDashboardRoute
     }
+    '/_authenticated/dashboard/notifications': {
+      id: '/_authenticated/dashboard/notifications'
+      path: '/notifications'
+      fullPath: '/dashboard/notifications'
+      preLoaderRoute: typeof AuthenticatedDashboardNotificationsRouteImport
+      parentRoute: typeof AuthenticatedDashboardRoute
+    }
     '/_authenticated/dashboard/mock-tests': {
       id: '/_authenticated/dashboard/mock-tests'
       path: '/mock-tests'
@@ -912,6 +932,7 @@ interface AuthenticatedDashboardRouteChildren {
   AuthenticatedDashboardCurrentAffairsRoute: typeof AuthenticatedDashboardCurrentAffairsRouteWithChildren
   AuthenticatedDashboardExamAlertsRoute: typeof AuthenticatedDashboardExamAlertsRoute
   AuthenticatedDashboardMockTestsRoute: typeof AuthenticatedDashboardMockTestsRoute
+  AuthenticatedDashboardNotificationsRoute: typeof AuthenticatedDashboardNotificationsRoute
   AuthenticatedDashboardPreviousYearPapersRoute: typeof AuthenticatedDashboardPreviousYearPapersRoute
   AuthenticatedDashboardProfileRoute: typeof AuthenticatedDashboardProfileRoute
   AuthenticatedDashboardRankRoute: typeof AuthenticatedDashboardRankRoute
@@ -928,6 +949,8 @@ const AuthenticatedDashboardRouteChildren: AuthenticatedDashboardRouteChildren =
     AuthenticatedDashboardExamAlertsRoute:
       AuthenticatedDashboardExamAlertsRoute,
     AuthenticatedDashboardMockTestsRoute: AuthenticatedDashboardMockTestsRoute,
+    AuthenticatedDashboardNotificationsRoute:
+      AuthenticatedDashboardNotificationsRoute,
     AuthenticatedDashboardPreviousYearPapersRoute:
       AuthenticatedDashboardPreviousYearPapersRoute,
     AuthenticatedDashboardProfileRoute: AuthenticatedDashboardProfileRoute,

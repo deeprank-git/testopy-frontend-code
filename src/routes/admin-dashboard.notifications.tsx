@@ -39,7 +39,7 @@ import {
 } from "@/components/ui/table";
 import { unwrapList } from "@/lib/api-unwrap";
 import { apiError } from "@/lib/admin/ui-helpers";
-import { EXAM_ALERTS_PATH, isValidLink, type NotificationType } from "@/lib/notifications";
+import { isValidLink, type NotificationSource, type NotificationType } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
 import * as notificationService from "@/services/notificationService";
 import * as userService from "@/services/userService";
@@ -66,6 +66,8 @@ type SentNotification = {
   type: NotificationType;
   link?: string;
   user: Student | null;
+  audience: "all" | "student";
+  source: NotificationSource;
   readCount?: number;
   createdAt: string;
 };
@@ -338,7 +340,7 @@ function NotificationsPage() {
                         <TableCell className="max-w-[360px]">
                           <div className="flex items-center gap-2">
                             <span className="font-medium">{n.title}</span>
-                            {n.link === EXAM_ALERTS_PATH && (
+                            {n.source === "exam_alert" && (
                               <StatusBadge tone="neutral" dot={false}>
                                 From exam alert
                               </StatusBadge>
