@@ -1,113 +1,115 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
 import {
+  AlertTriangle,
   Bell,
+  Calendar,
   CalendarDays,
   CheckCircle2,
-  Target,
-  RotateCcw,
-  Calendar,
-  Edit3,
-  IdCard,
-  Megaphone,
-  AlertTriangle,
-  ChevronRight,
   ChevronLeft,
-  Settings,
-  Moon,
-  Send,
-  Tag,
+  ChevronRight,
+  Edit3,
+  ExternalLink,
+  IdCard,
   Lightbulb,
-  MoreVertical,
+  Megaphone,
+  Moon,
+  RotateCcw,
+  Send,
+  Settings,
+  Sparkles,
+  Tag,
+  type LucideIcon,
 } from "lucide-react";
+import { unwrapList } from "@/lib/api-unwrap";
+import {
+  ALERT_TYPE_META,
+  alertStats,
+  alertStatus,
+  daysUntilLabel,
+  filterAlerts,
+  formatAlertDate,
+  upcomingSoon,
+  type AlertFilters,
+  type AlertType,
+  type ExamAlert,
+} from "@/lib/exam-alerts";
+import { isExternalLink } from "@/lib/notifications";
+import * as examAlertService from "@/services/examAlertService";
+import * as categoryService from "@/services/categoryService";
 
 export const Route = createFileRoute("/_authenticated/dashboard/exam-alerts")({
   component: AlertsPage,
 });
 
-// No backend endpoint exists yet for exam alerts/notifications — this page
-// stays on static placeholder content until that resource is added to the API.
-const CATEGORIES_MIN = [
-  { id: "c1", name: "SSC" },
-  { id: "c2", name: "Banking" },
-];
-const ALERTS_ALL = [
-  { id: "a1", title: "SSC CGL Tier 2 Admit Card Released", description: "Download your admit card now", alert_type: "admit_card", alert_date: new Date(Date.now() + 3 * 86400000).toISOString(), category_id: "c1" },
-  { id: "a2", title: "IBPS PO Registration Open", description: "Apply before the last date", alert_type: "registration", alert_date: new Date(Date.now() + 10 * 86400000).toISOString(), category_id: "c2" },
-  { id: "a3", title: "SSC CHSL Tier 1 Result Declared", description: "Check your result", alert_type: "result", alert_date: new Date(Date.now() - 2 * 86400000).toISOString(), category_id: "c1" },
-];
-
-const TABS = [
+const TABS: { id: AlertFilters["tab"]; label: string }[] = [
   { id: "all", label: "All Alerts" },
   { id: "exam_date", label: "Upcoming Exams" },
   { id: "registration", label: "Registrations Open" },
   { id: "admit_card", label: "Admit Card" },
   { id: "result", label: "Results" },
-  { id: "others", label: "Others" },
-] as const;
-
-const STATS = [
-  { icon: CalendarDays, value: "28", label: "Upcoming Exams", tint: "bg-blue-50 text-blue-600" },
-  { icon: Bell, value: "14", label: "New Notifications", tint: "bg-emerald-50 text-emerald-600" },
-  { icon: CheckCircle2, value: "56", label: "Total Alerts", tint: "bg-violet-50 text-violet-600" },
-  { icon: Target, value: "98%", label: "On-time Updates", tint: "bg-amber-50 text-amber-600" },
+  { id: "other", label: "Others" },
 ];
 
-const ALERT_STYLES: Record<string, { icon: any; iconBg: string; badgeBg: string; badgeText: string; label: string }> = {
-  exam_date: { icon: Calendar, iconBg: "bg-blue-50 text-blue-600", badgeBg: "bg-blue-100 hover:bg-blue-100", badgeText: "text-blue-700", label: "Exam Date" },
-  registration: { icon: Edit3, iconBg: "bg-emerald-50 text-emerald-600", badgeBg: "bg-emerald-100 hover:bg-emerald-100", badgeText: "text-emerald-700", label: "Registration Open" },
-  admit_card: { icon: IdCard, iconBg: "bg-violet-50 text-violet-600", badgeBg: "bg-violet-100 hover:bg-violet-100", badgeText: "text-violet-700", label: "Admit Card" },
-  result: { icon: Megaphone, iconBg: "bg-orange-50 text-orange-600", badgeBg: "bg-orange-100 hover:bg-orange-100", badgeText: "text-orange-700", label: "Result" },
-  others: { icon: AlertTriangle, iconBg: "bg-rose-50 text-rose-600", badgeBg: "bg-rose-100 hover:bg-rose-100", badgeText: "text-rose-700", label: "Notification" },
+const ALERT_ICONS: Record<AlertType, LucideIcon> = {
+  exam_date: Calendar,
+  registration: Edit3,
+  admit_card: IdCard,
+  result: Megaphone,
+  other: AlertTriangle,
 };
+
+const MONTHS = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
+
+type SideFilters = Omit<AlertFilters, "tab">;
+const EMPTY_FILTERS: SideFilters = { category: "all", type: "all", month: "all", status: "all" };
 
 const PAGE_SIZE = 7;
 
 function AlertsPage() {
-  const [tab, setTab] = useState<string>("all");
-  const [category, setCategory] = useState("all");
-  const [type, setType] = useState("all");
-  const [month, setMonth] = useState("all");
-  const [status, setStatus] = useState("all");
+  const [tab, setTab] = useState<AlertFilters["tab"]>("all");
+  const [filters, setFilters] = useState<SideFilters>(EMPTY_FILTERS);
   const [page, setPage] = useState(1);
 
-  const alerts = ALERTS_ALL;
-  const categories = CATEGORIES_MIN;
+  const alertsQuery = useQuery({
+    queryKey: ["exam-alerts"],
+    queryFn: () => examAlertService.getExamAlerts(),
+  });
+  const alerts = unwrapList<ExamAlert>(alertsQuery.data);
 
-  const filtered = useMemo(() => {
-    let rows = [...alerts];
-    if (tab !== "all") rows = rows.filter((r) => r.alert_type === tab);
-    if (category !== "all") rows = rows.filter((r) => r.category_id === category);
-    if (type !== "all") rows = rows.filter((r) => r.alert_type === type);
-    if (month !== "all") rows = rows.filter((r) => r.alert_date?.slice(5, 7) === month);
-    return rows;
-  }, [alerts, tab, category, type, month, status]);
+  const { data: categoriesRes } = useQuery({
+    queryKey: ["exam-alerts", "categories"],
+    queryFn: () => categoryService.getCategories(),
+  });
+  const categories = unwrapList<{ _id: string; name: string }>(categoriesRes);
 
+  const setFilter = <K extends keyof SideFilters>(key: K, value: SideFilters[K]) => {
+    setFilters((f) => ({ ...f, [key]: value }));
+    setPage(1);
+  };
+  const reset = () => {
+    setFilters(EMPTY_FILTERS);
+    setPage(1);
+  };
+
+  const filtered = useMemo(() => filterAlerts(alerts, { tab, ...filters }), [alerts, tab, filters]);
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const upcoming = useMemo(() => upcomingSoon(alerts, 4), [alerts]);
+  const stats = useMemo(() => alertStats(alerts), [alerts]);
 
-  const upcoming = useMemo(
-    () => alerts.filter((a) => a.alert_date && new Date(a.alert_date) > new Date()).slice(0, 4),
-    [alerts],
-  );
-
-  const remind = (id: string) => toast.success("We'll remind you about this alert");
-
-  const reset = () => {
-    setCategory("all"); setType("all"); setMonth("all"); setStatus("all"); setPage(1);
-  };
-
-  const daysUntil = (d: string | null) => {
-    if (!d) return "—";
-    const diff = Math.ceil((+new Date(d) - Date.now()) / 86400000);
-    return diff <= 0 ? "Today" : `In ${diff} Days`;
-  };
+  const STATS = [
+    { icon: CalendarDays, value: stats.upcomingExams, label: "Upcoming Exams", tint: "bg-blue-50 text-blue-600" },
+    { icon: Sparkles, value: stats.newThisWeek, label: "New This Week", tint: "bg-emerald-50 text-emerald-600" },
+    { icon: CheckCircle2, value: stats.total, label: "Total Alerts", tint: "bg-violet-50 text-violet-600" },
+  ];
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
@@ -117,16 +119,18 @@ function AlertsPage() {
             Exam Alerts <Bell className="h-5 w-5 text-primary" />
           </h1>
           <p className="text-sm text-muted-foreground mt-1 max-w-md">
-            Get instant notifications for exam dates, registrations, admit cards, results and important updates.
+            Exam dates, registrations, admit cards, results and important updates in one place.
           </p>
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 xl:w-[640px]">
+        <div className="grid grid-cols-3 gap-3 xl:w-[480px]">
           {STATS.map((s, i) => (
             <motion.div key={s.label} whileHover={{ y: -2 }} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
               <Card className="p-3 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow">
                 <div className={`h-10 w-10 rounded-lg grid place-items-center ${s.tint}`}><s.icon className="h-5 w-5" /></div>
                 <div>
-                  <div className="font-display font-extrabold text-lg leading-none">{s.value}</div>
+                  <div className="font-display font-extrabold text-lg leading-none">
+                    {alertsQuery.isLoading ? "–" : s.value}
+                  </div>
                   <div className="text-[11px] text-muted-foreground mt-1">{s.label}</div>
                 </div>
               </Card>
@@ -140,43 +144,43 @@ function AlertsPage() {
           <Card className="p-4">
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 items-end">
               <FilterField label="Exam Category">
-                <Select value={category} onValueChange={setCategory}>
+                <Select value={filters.category} onValueChange={(v) => setFilter("category", v)}>
                   <SelectTrigger><SelectValue placeholder="All Categories" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Categories</SelectItem>
-                    {categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                    {categories.map((c) => <SelectItem key={c._id} value={c._id}>{c.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </FilterField>
               <FilterField label="Notification Type">
-                <Select value={type} onValueChange={setType}>
+                <Select value={filters.type} onValueChange={(v) => setFilter("type", v as SideFilters["type"])}>
                   <SelectTrigger><SelectValue placeholder="All Types" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="exam_date">Exam Date</SelectItem>
-                    <SelectItem value="registration">Registration</SelectItem>
-                    <SelectItem value="admit_card">Admit Card</SelectItem>
-                    <SelectItem value="result">Result</SelectItem>
+                    {(Object.keys(ALERT_TYPE_META) as AlertType[]).map((t) => (
+                      <SelectItem key={t} value={t}>{ALERT_TYPE_META[t].chip}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </FilterField>
               <FilterField label="Exam Month">
-                <Select value={month} onValueChange={setMonth}>
+                <Select value={filters.month} onValueChange={(v) => setFilter("month", v)}>
                   <SelectTrigger><SelectValue placeholder="All Months" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Months</SelectItem>
-                    {["01","02","03","04","05","06","07","08","09","10","11","12"].map((m) => (
+                    {MONTHS.map((m) => (
                       <SelectItem key={m} value={m}>{new Date(2025, +m - 1).toLocaleString("en", { month: "long" })}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </FilterField>
               <FilterField label="Status">
-                <Select value={status} onValueChange={setStatus}>
+                <Select value={filters.status} onValueChange={(v) => setFilter("status", v as SideFilters["status"])}>
                   <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="new">New Only</SelectItem>
+                    <SelectItem value="upcoming">Upcoming</SelectItem>
+                    <SelectItem value="past">Past</SelectItem>
                   </SelectContent>
                 </Select>
               </FilterField>
@@ -206,85 +210,121 @@ function AlertsPage() {
             </div>
 
             <div className="divide-y divide-border">
+              {alertsQuery.isLoading &&
+                Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="px-4 py-4 flex items-center gap-4">
+                    <Skeleton className="h-11 w-11 rounded-lg" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-4 w-1/2" />
+                      <Skeleton className="h-3 w-1/3" />
+                    </div>
+                  </div>
+                ))}
+
+              {alertsQuery.isError && (
+                <div className="p-12 text-center text-sm text-muted-foreground space-y-3">
+                  <div>Couldn't load alerts</div>
+                  <Button size="sm" variant="outline" onClick={() => alertsQuery.refetch()}>Retry</Button>
+                </div>
+              )}
+
+              {alertsQuery.isSuccess && alerts.length === 0 && (
+                <div className="p-12 text-center text-sm text-muted-foreground">No alerts yet — check back soon.</div>
+              )}
+              {alertsQuery.isSuccess && alerts.length > 0 && pageRows.length === 0 && (
+                <div className="p-12 text-center text-sm text-muted-foreground">No alerts match these filters.</div>
+              )}
+
               {pageRows.map((a) => {
-                const style = ALERT_STYLES[a.alert_type] ?? ALERT_STYLES.others;
-                const Icon = style.icon;
-                const d = a.alert_date ? new Date(a.alert_date) : null;
+                const meta = ALERT_TYPE_META[a.type] ?? ALERT_TYPE_META.other;
+                const Icon = ALERT_ICONS[a.type] ?? AlertTriangle;
+                const isUpcoming = alertStatus(a) === "upcoming";
                 return (
                   <motion.div
-                    key={a.id}
+                    key={a._id}
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     whileHover={{ backgroundColor: "hsl(var(--muted) / 0.4)" }}
                     className="px-4 py-4 flex items-center gap-4"
                   >
-                    <div className={`h-11 w-11 rounded-lg grid place-items-center shrink-0 ${style.iconBg}`}>
+                    <div className={`h-11 w-11 rounded-lg grid place-items-center shrink-0 ${meta.iconBg}`}>
                       <Icon className="h-5 w-5" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold text-sm">{a.title}</div>
-                      <div className="text-xs text-muted-foreground mt-0.5">{a.description}</div>
+                      {a.description && <div className="text-xs text-muted-foreground mt-0.5">{a.description}</div>}
+                      {a.category && <div className="text-[11px] text-muted-foreground mt-0.5">{a.category.name}</div>}
                     </div>
-                    <Badge className={`${style.badgeBg} ${style.badgeText} border-0`}>{style.label}</Badge>
+                    <Badge className={`${meta.badge} border-0`}>{meta.label}</Badge>
                     <div className="text-right text-xs">
-                      <div className="font-medium">{d ? d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—"}</div>
-                      <div className="text-muted-foreground">{d ? d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : ""}</div>
+                      <div className="font-medium">{formatAlertDate(a.date)}</div>
+                      <div className={isUpcoming ? "text-emerald-600" : "text-muted-foreground"}>
+                        {isUpcoming ? "Upcoming" : "Past"}
+                      </div>
                     </div>
-                    <Button size="sm" variant="outline" className="text-primary border-primary/30 hover:bg-primary/5" onClick={() => remind(a.id)}>
-                      <Bell className="h-3.5 w-3.5 mr-1.5" /> Remind Me
-                    </Button>
-                    <Button size="icon" variant="ghost" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
+                    {a.link && (
+                      <Button asChild size="sm" variant="outline" className="text-primary border-primary/30 hover:bg-primary/5">
+                        {isExternalLink(a.link) ? (
+                          <a href={a.link} target="_blank" rel="noopener noreferrer">
+                            View details <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
+                          </a>
+                        ) : (
+                          <Link to={a.link as never}>View details</Link>
+                        )}
+                      </Button>
+                    )}
                   </motion.div>
                 );
               })}
-              {pageRows.length === 0 && <div className="p-12 text-center text-sm text-muted-foreground">No alerts found.</div>}
             </div>
 
-            <div className="flex items-center justify-between px-4 py-3 border-t border-border">
-              <span className="text-xs text-muted-foreground">
-                Showing {(page - 1) * PAGE_SIZE + 1} to {Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length} alerts
-              </span>
-              <div className="flex items-center gap-1">
-                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => i + 1).map((n) => (
-                  <Button key={n} size="icon" variant={n === page ? "default" : "ghost"} className="h-8 w-8 text-xs" onClick={() => setPage(n)}>{n}</Button>
-                ))}
-                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
+            {filtered.length > 0 && (
+              <div className="flex items-center justify-between px-4 py-3 border-t border-border">
+                <span className="text-xs text-muted-foreground">
+                  Showing {(page - 1) * PAGE_SIZE + 1} to {Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length} alerts
+                </span>
+                <div className="flex items-center gap-1">
+                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => i + 1).map((n) => (
+                    <Button key={n} size="icon" variant={n === page ? "default" : "ghost"} className="h-8 w-8 text-xs" onClick={() => setPage(n)}>{n}</Button>
+                  ))}
+                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-            </div>
+            )}
           </Card>
         </div>
 
         <div className="space-y-4">
           <Card className="p-4">
             <div className="flex items-center justify-between mb-3">
-              <span className="font-display font-bold text-sm">Upcoming Exams</span>
+              <span className="font-display font-bold text-sm">Upcoming</span>
               <Link to="/exams" className="text-xs text-primary hover:underline">View All</Link>
             </div>
             <ul className="space-y-3">
               {upcoming.map((u) => {
-                const d = u.alert_date ? new Date(u.alert_date) : null;
+                const d = new Date(u.date);
                 return (
-                  <li key={u.id} className="flex items-center gap-3">
+                  <li key={u._id} className="flex items-center gap-3">
                     <div className="h-11 w-11 rounded-lg bg-blue-50 grid place-items-center text-center">
                       <div className="leading-none">
-                        <div className="text-[10px] font-bold text-blue-600 uppercase">{d ? d.toLocaleString("en", { month: "short" }) : ""}</div>
-                        <div className="text-sm font-extrabold text-blue-700">{d ? d.getDate() : "—"}</div>
+                        <div className="text-[10px] font-bold text-blue-600 uppercase">{d.toLocaleString("en", { month: "short", timeZone: "UTC" })}</div>
+                        <div className="text-sm font-extrabold text-blue-700">{d.getUTCDate()}</div>
                       </div>
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold text-xs truncate">{u.title}</div>
-                      <div className="text-[11px] text-muted-foreground">{d ? d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—"}</div>
+                      <div className="text-[11px] text-muted-foreground">{formatAlertDate(u.date)}</div>
                     </div>
-                    <Badge className="bg-blue-100 text-blue-700 border-0 hover:bg-blue-100 text-[10px]">{daysUntil(u.alert_date)}</Badge>
+                    <Badge className="bg-blue-100 text-blue-700 border-0 hover:bg-blue-100 text-[10px]">{daysUntilLabel(u)}</Badge>
                   </li>
                 );
               })}
-              {upcoming.length === 0 && <li className="text-xs text-muted-foreground">No upcoming exams.</li>}
+              {upcoming.length === 0 && <li className="text-xs text-muted-foreground">Nothing upcoming.</li>}
             </ul>
           </Card>
 
