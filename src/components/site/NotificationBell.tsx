@@ -42,7 +42,9 @@ export function NotificationBell() {
     queryFn: () => notificationService.getMyNotifications({ limit: 10 }),
     enabled: !!user,
     refetchOnWindowFocus: true,
-    refetchInterval: 2 * 60 * 1000,
+    // Picks up new and admin-deleted notifications. Paused while the tab is hidden
+    // (refetchIntervalInBackground defaults to false); refetchOnWindowFocus covers return.
+    refetchInterval: 30 * 1000,
   });
 
   // Optimistic update shared by "mark one" (id) and "mark all" (no id).
