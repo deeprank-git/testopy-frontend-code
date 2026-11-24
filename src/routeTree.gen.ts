@@ -32,6 +32,7 @@ import { Route as AdminDashboardProfileRouteImport } from './routes/admin-dashbo
 import { Route as AdminDashboardPagesRouteImport } from './routes/admin-dashboard.pages'
 import { Route as AdminDashboardNotificationsRouteImport } from './routes/admin-dashboard.notifications'
 import { Route as AdminDashboardMediaRouteImport } from './routes/admin-dashboard.media'
+import { Route as AdminDashboardExamAlertsRouteImport } from './routes/admin-dashboard.exam-alerts'
 import { Route as AdminDashboardCurrentAffairsRouteImport } from './routes/admin-dashboard.current-affairs'
 import { Route as AdminDashboardCategoriesRouteImport } from './routes/admin-dashboard.categories'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -169,6 +170,12 @@ const AdminDashboardMediaRoute = AdminDashboardMediaRouteImport.update({
   path: '/media',
   getParentRoute: () => AdminDashboardRoute,
 } as any)
+const AdminDashboardExamAlertsRoute =
+  AdminDashboardExamAlertsRouteImport.update({
+    id: '/exam-alerts',
+    path: '/exam-alerts',
+    getParentRoute: () => AdminDashboardRoute,
+  } as any)
 const AdminDashboardCurrentAffairsRoute =
   AdminDashboardCurrentAffairsRouteImport.update({
     id: '/current-affairs',
@@ -300,6 +307,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRouteWithChildren
   '/admin-dashboard/categories': typeof AdminDashboardCategoriesRoute
   '/admin-dashboard/current-affairs': typeof AdminDashboardCurrentAffairsRoute
+  '/admin-dashboard/exam-alerts': typeof AdminDashboardExamAlertsRoute
   '/admin-dashboard/media': typeof AdminDashboardMediaRoute
   '/admin-dashboard/notifications': typeof AdminDashboardNotificationsRoute
   '/admin-dashboard/pages': typeof AdminDashboardPagesRoute
@@ -342,6 +350,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRoute
   '/admin-dashboard/categories': typeof AdminDashboardCategoriesRoute
   '/admin-dashboard/current-affairs': typeof AdminDashboardCurrentAffairsRoute
+  '/admin-dashboard/exam-alerts': typeof AdminDashboardExamAlertsRoute
   '/admin-dashboard/media': typeof AdminDashboardMediaRoute
   '/admin-dashboard/notifications': typeof AdminDashboardNotificationsRoute
   '/admin-dashboard/pages': typeof AdminDashboardPagesRoute
@@ -388,6 +397,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRouteWithChildren
   '/admin-dashboard/categories': typeof AdminDashboardCategoriesRoute
   '/admin-dashboard/current-affairs': typeof AdminDashboardCurrentAffairsRoute
+  '/admin-dashboard/exam-alerts': typeof AdminDashboardExamAlertsRoute
   '/admin-dashboard/media': typeof AdminDashboardMediaRoute
   '/admin-dashboard/notifications': typeof AdminDashboardNotificationsRoute
   '/admin-dashboard/pages': typeof AdminDashboardPagesRoute
@@ -434,6 +444,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/admin-dashboard/categories'
     | '/admin-dashboard/current-affairs'
+    | '/admin-dashboard/exam-alerts'
     | '/admin-dashboard/media'
     | '/admin-dashboard/notifications'
     | '/admin-dashboard/pages'
@@ -476,6 +487,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/admin-dashboard/categories'
     | '/admin-dashboard/current-affairs'
+    | '/admin-dashboard/exam-alerts'
     | '/admin-dashboard/media'
     | '/admin-dashboard/notifications'
     | '/admin-dashboard/pages'
@@ -521,6 +533,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/admin-dashboard/categories'
     | '/admin-dashboard/current-affairs'
+    | '/admin-dashboard/exam-alerts'
     | '/admin-dashboard/media'
     | '/admin-dashboard/notifications'
     | '/admin-dashboard/pages'
@@ -726,6 +739,13 @@ declare module '@tanstack/react-router' {
       path: '/media'
       fullPath: '/admin-dashboard/media'
       preLoaderRoute: typeof AdminDashboardMediaRouteImport
+      parentRoute: typeof AdminDashboardRoute
+    }
+    '/admin-dashboard/exam-alerts': {
+      id: '/admin-dashboard/exam-alerts'
+      path: '/exam-alerts'
+      fullPath: '/admin-dashboard/exam-alerts'
+      preLoaderRoute: typeof AdminDashboardExamAlertsRouteImport
       parentRoute: typeof AdminDashboardRoute
     }
     '/admin-dashboard/current-affairs': {
@@ -940,6 +960,7 @@ const AuthenticatedRouteRouteWithChildren =
 interface AdminDashboardRouteChildren {
   AdminDashboardCategoriesRoute: typeof AdminDashboardCategoriesRoute
   AdminDashboardCurrentAffairsRoute: typeof AdminDashboardCurrentAffairsRoute
+  AdminDashboardExamAlertsRoute: typeof AdminDashboardExamAlertsRoute
   AdminDashboardMediaRoute: typeof AdminDashboardMediaRoute
   AdminDashboardNotificationsRoute: typeof AdminDashboardNotificationsRoute
   AdminDashboardPagesRoute: typeof AdminDashboardPagesRoute
@@ -960,6 +981,7 @@ interface AdminDashboardRouteChildren {
 const AdminDashboardRouteChildren: AdminDashboardRouteChildren = {
   AdminDashboardCategoriesRoute: AdminDashboardCategoriesRoute,
   AdminDashboardCurrentAffairsRoute: AdminDashboardCurrentAffairsRoute,
+  AdminDashboardExamAlertsRoute: AdminDashboardExamAlertsRoute,
   AdminDashboardMediaRoute: AdminDashboardMediaRoute,
   AdminDashboardNotificationsRoute: AdminDashboardNotificationsRoute,
   AdminDashboardPagesRoute: AdminDashboardPagesRoute,
