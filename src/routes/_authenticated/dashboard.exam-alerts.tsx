@@ -20,12 +20,8 @@ import {
   IdCard,
   Lightbulb,
   Megaphone,
-  Moon,
   RotateCcw,
-  Send,
-  Settings,
   Sparkles,
-  Tag,
   type LucideIcon,
 } from "lucide-react";
 import { unwrapList } from "@/lib/api-unwrap";
@@ -328,42 +324,16 @@ function AlertsPage() {
             </ul>
           </Card>
 
-          <Card className="p-4">
-            <div className="font-display font-bold text-sm mb-3">Alert Preferences</div>
-            <ul className="space-y-1">
-              {[
-                { icon: Settings, label: "Notification Settings", sub: "Manage how you receive alerts" },
-                { icon: Moon, label: "Quiet Hours", sub: "10:00 PM – 07:00 AM" },
-                { icon: Send, label: "Delivery Channels", sub: "Push, Email, SMS" },
-                { icon: Tag, label: "Exam Categories", sub: "12 categories selected" },
-              ].map((p) => (
-                <li key={p.label}>
-                  <button className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-muted transition-colors text-left">
-                    <p.icon className="h-4 w-4 text-muted-foreground" />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-semibold">{p.label}</div>
-                      <div className="text-[11px] text-muted-foreground truncate">{p.sub}</div>
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </Card>
-
           <Card className="p-4 bg-primary/5 border-primary/20">
             <div className="flex items-start gap-2">
               <Lightbulb className="h-5 w-5 text-primary mt-0.5" />
               <div>
                 <div className="font-display font-bold text-sm">Important Tip</div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Enable all notifications to stay ahead in your preparation and never miss an important update.
+                  Important new alerts also show up in your notification bell at the top of the page, so check it regularly.
                 </p>
               </div>
             </div>
-            <Button variant="ghost" className="w-full mt-3 text-primary justify-between">
-              Enable All Notifications <ChevronRight className="h-4 w-4" />
-            </Button>
           </Card>
         </div>
       </div>
