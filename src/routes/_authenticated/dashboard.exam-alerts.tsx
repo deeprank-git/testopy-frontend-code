@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -26,10 +26,10 @@ import {
 import { unwrapList } from "@/lib/api-unwrap";
 import {
   ALERT_TYPE_META,
-  alertStats,
+  alertListParams,
   alertStatus,
-  filterAlerts,
   formatAlertDate,
+  localYmd,
   withAlertCategories,
   type AlertFilters,
   type AlertType,
@@ -73,11 +73,31 @@ function AlertsPage() {
   const [filters, setFilters] = useState<SideFilters>(EMPTY_FILTERS);
   const [page, setPage] = useState(1);
 
+  // The viewer's local day: "upcoming"/"past" and the header counts are relative to it.
+  const today = localYmd(new Date());
+
+  // One page at a time, filtered on the server. Null params = tab and type disagree.
+  const params = alertListParams({ tab, ...filters }, today);
   const alertsQuery = useQuery({
-    queryKey: ["exam-alerts"],
-    queryFn: () => examAlertService.getExamAlerts(),
+    queryKey: ["exam-alerts", "list", params, page],
+    queryFn: () => examAlertService.getExamAlerts({ ...params, page, limit: PAGE_SIZE }),
+    enabled: params !== null,
+    placeholderData: keepPreviousData,
   });
-  const alerts = unwrapList<ExamAlert>(alertsQuery.data);
+  const pageRows = params === null ? [] : unwrapList<ExamAlert>(alertsQuery.data);
+  const total = params === null ? 0 : (alertsQuery.data?.total ?? 0);
+  const totalPages = params === null ? 1 : (alertsQuery.data?.totalPages ?? 1);
+  const listLoaded = params === null || alertsQuery.isSuccess;
+  // Alerts archived while viewing the last page can leave us past the end: step back.
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  const summaryQuery = useQuery({
+    queryKey: ["exam-alerts", "summary", today],
+    queryFn: () => examAlertService.getExamAlertSummary(today),
+  });
+  const stats = summaryQuery.data;
 
   const { data: categoriesRes } = useQuery({
     queryKey: ["exam-alerts", "categories"],
@@ -86,8 +106,12 @@ function AlertsPage() {
   const categories = unwrapList<{ _id: string; name: string }>(categoriesRes);
   // Archived categories still on an alert stay filterable.
   const categoryOptions = useMemo(
-    () => withAlertCategories(categories, alerts),
-    [categories, alerts],
+    () =>
+      withAlertCategories(
+        categories,
+        (stats?.categories ?? []).map((category) => ({ category })),
+      ),
+    [categories, stats],
   );
 
   const setFilter = <K extends keyof SideFilters>(key: K, value: SideFilters[K]) => {
@@ -99,15 +123,10 @@ function AlertsPage() {
     setPage(1);
   };
 
-  const filtered = useMemo(() => filterAlerts(alerts, { tab, ...filters }), [alerts, tab, filters]);
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const stats = useMemo(() => alertStats(alerts), [alerts]);
-
   const STATS = [
-    { icon: CalendarDays, value: stats.upcomingExams, label: "Upcoming Exams", tint: "bg-blue-50 text-blue-600" },
-    { icon: Sparkles, value: stats.newThisWeek, label: "New This Week", tint: "bg-emerald-50 text-emerald-600" },
-    { icon: CheckCircle2, value: stats.total, label: "Total Alerts", tint: "bg-violet-50 text-violet-600" },
+    { icon: CalendarDays, value: stats?.upcomingExams, label: "Upcoming Exams", tint: "bg-blue-50 text-blue-600" },
+    { icon: Sparkles, value: stats?.newThisWeek, label: "New This Week", tint: "bg-emerald-50 text-emerald-600" },
+    { icon: CheckCircle2, value: stats?.total, label: "Total Alerts", tint: "bg-violet-50 text-violet-600" },
   ];
 
   return (
@@ -128,7 +147,7 @@ function AlertsPage() {
                 <div className={`h-10 w-10 rounded-lg grid place-items-center ${s.tint}`}><s.icon className="h-5 w-5" /></div>
                 <div>
                   <div className="font-display font-extrabold text-lg leading-none">
-                    {alertsQuery.isLoading ? "–" : s.value}
+                    {s.value ?? "–"}
                   </div>
                   <div className="text-[11px] text-muted-foreground mt-1">{s.label}</div>
                 </div>
@@ -227,12 +246,16 @@ function AlertsPage() {
                 </div>
               )}
 
-              {alertsQuery.isSuccess && alerts.length === 0 && (
+              {listLoaded && pageRows.length === 0 && stats?.total === 0 && (
                 <div className="p-12 text-center text-sm text-muted-foreground">No alerts yet — check back soon.</div>
               )}
-              {alertsQuery.isSuccess && alerts.length > 0 && pageRows.length === 0 && (
-                <div className="p-12 text-center text-sm text-muted-foreground">No alerts match these filters.</div>
-              )}
+              {listLoaded &&
+                pageRows.length === 0 &&
+                ((stats !== undefined && stats.total > 0) || summaryQuery.isError) && (
+                  <div className="p-12 text-center text-sm text-muted-foreground">
+                    No alerts match these filters.
+                  </div>
+                )}
 
               {pageRows.map((a) => {
                 const meta = ALERT_TYPE_META[a.type] ?? ALERT_TYPE_META.other;
@@ -276,10 +299,10 @@ function AlertsPage() {
               })}
             </div>
 
-            {filtered.length > 0 && (
+            {total > 0 && (
               <div className="flex items-center justify-between px-4 py-3 border-t border-border">
                 <span className="text-xs text-muted-foreground">
-                  Showing {(page - 1) * PAGE_SIZE + 1} to {Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length} alerts
+                  Showing {(page - 1) * PAGE_SIZE + 1} to {Math.min(page * PAGE_SIZE, total)} of {total} alerts
                 </span>
                 <div className="flex items-center gap-1">
                   <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>

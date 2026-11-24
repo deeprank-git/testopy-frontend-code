@@ -65,9 +65,9 @@ export const ALERT_TYPE_META: Record<
   },
 };
 
-const DAY_MS = 86_400_000;
 const pad = (n: number) => String(n).padStart(2, "0");
-const localYmd = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+export const localYmd = (d: Date): string =>
+  `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
 /** "YYYY-MM-DD" the alert is about (UTC day). Also the value for <input type="date">. */
 export const alertDay = (a: Pick<ExamAlert, "date">) => new Date(a.date).toISOString().slice(0, 10);
@@ -84,28 +84,6 @@ export function alertStatus(a: Pick<ExamAlert, "date">, now: Date = new Date()):
   return alertDay(a) >= localYmd(now) ? "upcoming" : "past";
 }
 
-export function alertStats(alerts: ExamAlert[], now: Date = new Date()) {
-  const weekAgo = now.getTime() - 7 * DAY_MS;
-  return {
-    upcomingExams: alerts.filter(
-      (a) => a.type === "exam_date" && alertStatus(a, now) === "upcoming",
-    ).length,
-    newThisWeek: alerts.filter((a) => new Date(a.createdAt).getTime() >= weekAgo).length,
-    total: alerts.length,
-  };
-}
-
-export function filterAlerts(alerts: ExamAlert[], f: AlertFilters, now: Date = new Date()) {
-  return alerts.filter(
-    (a) =>
-      (f.tab === "all" || a.type === f.tab) &&
-      (f.type === "all" || a.type === f.type) &&
-      (f.category === "all" || a.category?._id === f.category) &&
-      (f.month === "all" || alertDay(a).slice(5, 7) === f.month) &&
-      (f.status === "all" || alertStatus(a, now) === f.status),
-  );
-}
-
 /** Active categories plus any (e.g. archived) category still used by an alert, so filters can find it. */
 export function withAlertCategories(
   categories: { _id: string; name: string }[],
@@ -120,4 +98,25 @@ export function withAlertCategories(
     }
   }
   return out;
+}
+
+/** Query params for GET /exam-alerts, or null when the tab and type dropdown disagree (no match possible). */
+export function alertListParams(
+  f: AlertFilters,
+  today: string,
+): {
+  type?: AlertType;
+  category?: string;
+  monthOfYear?: string;
+  status?: AlertStatus;
+  today?: string;
+} | null {
+  if (f.tab !== "all" && f.type !== "all" && f.tab !== f.type) return null;
+  const type = f.tab !== "all" ? f.tab : f.type !== "all" ? f.type : undefined;
+  return {
+    ...(type ? { type } : {}),
+    ...(f.category !== "all" ? { category: f.category } : {}),
+    ...(f.month !== "all" ? { monthOfYear: f.month } : {}),
+    ...(f.status !== "all" ? { status: f.status, today } : {}),
+  };
 }
