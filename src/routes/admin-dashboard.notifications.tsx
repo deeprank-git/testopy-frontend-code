@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useBlocker } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { BellRing, Check, ChevronsUpDown, MoreHorizontal, Send } from "lucide-react";
@@ -149,6 +149,14 @@ function NotificationsPage() {
       setSubmitted(false);
     },
     onError: (e) => toast.error(apiError(e, "Could not send notification")),
+  });
+
+  // Like the drawers: ask before throwing away a half-written message.
+  const dirty = JSON.stringify(form) !== JSON.stringify(EMPTY) && !sendMut.isPending;
+  useBlocker({
+    shouldBlockFn: () => !window.confirm("Discard this unsaved message?"),
+    enableBeforeUnload: () => dirty,
+    disabled: !dirty,
   });
 
   const deleteMut = useMutation({
@@ -352,10 +360,12 @@ function NotificationsPage() {
                           <StatusBadge tone={type.tone}>{type.label}</StatusBadge>
                         </TableCell>
                         <TableCell className="whitespace-nowrap">
-                          {n.user ? (
+                          {n.audience === "all" ? (
+                            <span className="text-muted-foreground">All students</span>
+                          ) : n.user ? (
                             studentLabel(n.user)
                           ) : (
-                            <span className="text-muted-foreground">All students</span>
+                            <span className="italic text-muted-foreground">Deleted student</span>
                           )}
                         </TableCell>
                         <TableCell className="whitespace-nowrap text-muted-foreground">
@@ -365,7 +375,7 @@ function NotificationsPage() {
                           })}
                         </TableCell>
                         <TableCell className="whitespace-nowrap text-right tabular-nums text-muted-foreground">
-                          {n.user ? "—" : `Read by ${n.readCount ?? 0}`}
+                          {n.audience === "all" ? `Read by ${n.readCount ?? 0}` : "—"}
                         </TableCell>
                         <TableCell>
                           <DropdownMenu>
