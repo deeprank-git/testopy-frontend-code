@@ -84,14 +84,6 @@ export function alertStatus(a: Pick<ExamAlert, "date">, now: Date = new Date()):
   return alertDay(a) >= localYmd(now) ? "upcoming" : "past";
 }
 
-export function daysUntilLabel(a: Pick<ExamAlert, "date">, now: Date = new Date()): string {
-  const diff = Math.round((Date.parse(alertDay(a)) - Date.parse(localYmd(now))) / DAY_MS);
-  if (diff < 0) return "Past";
-  if (diff === 0) return "Today";
-  if (diff === 1) return "Tomorrow";
-  return `In ${diff} days`;
-}
-
 export function alertStats(alerts: ExamAlert[], now: Date = new Date()) {
   const weekAgo = now.getTime() - 7 * DAY_MS;
   return {
@@ -112,13 +104,6 @@ export function filterAlerts(alerts: ExamAlert[], f: AlertFilters, now: Date = n
       (f.month === "all" || alertDay(a).slice(5, 7) === f.month) &&
       (f.status === "all" || alertStatus(a, now) === f.status),
   );
-}
-
-export function upcomingSoon(alerts: ExamAlert[], limit = 4, now: Date = new Date()) {
-  return alerts
-    .filter((a) => alertStatus(a, now) === "upcoming")
-    .sort((x, y) => alertDay(x).localeCompare(alertDay(y)))
-    .slice(0, limit);
 }
 
 /** Active categories plus any (e.g. archived) category still used by an alert, so filters can find it. */

@@ -3,10 +3,8 @@ import {
   alertDay,
   alertStats,
   alertStatus,
-  daysUntilLabel,
   filterAlerts,
   formatAlertDate,
-  upcomingSoon,
   withAlertCategories,
   type AlertFilters,
   type ExamAlert,
@@ -52,17 +50,6 @@ describe("alertStatus", () => {
   });
 });
 
-describe("daysUntilLabel", () => {
-  it.each([
-    ["2026-11-24", "Today"],
-    ["2026-11-25", "Tomorrow"],
-    ["2026-11-29", "In 5 days"],
-    ["2026-11-20", "Past"],
-  ])("%s → %s", (ymd, label) => {
-    expect(daysUntilLabel(alert({ date: `${ymd}T00:00:00.000Z` }), NOW)).toBe(label);
-  });
-});
-
 describe("alertStats", () => {
   it("counts upcoming exam dates, alerts created this week, and total", () => {
     const stats = alertStats(
@@ -98,18 +85,6 @@ describe("filterAlerts", () => {
     expect(ids({ status: "past" })).toEqual(["x3"]);
   });
   it("combines filters", () => expect(ids({ category: "c1", status: "upcoming" })).toEqual(["x1"]));
-});
-
-describe("upcomingSoon", () => {
-  it("returns upcoming alerts soonest first, capped", () => {
-    const rows = [
-      alert({ _id: "late", date: "2026-12-20T00:00:00.000Z" }),
-      alert({ _id: "past", date: "2026-11-01T00:00:00.000Z" }),
-      alert({ _id: "soon", date: "2026-11-25T00:00:00.000Z" }),
-      alert({ _id: "mid", date: "2026-12-01T00:00:00.000Z" }),
-    ];
-    expect(upcomingSoon(rows, 2, NOW).map((a) => a._id)).toEqual(["soon", "mid"]);
-  });
 });
 
 describe("withAlertCategories", () => {
