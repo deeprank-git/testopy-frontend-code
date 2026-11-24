@@ -2,7 +2,11 @@
 // pages. Kept out of .tsx files so they can be unit-tested and so React fast
 // refresh keeps working.
 
-export type NotificationType = "info" | "reminder" | "result" | "offer" | "system";
+import { z } from "zod";
+
+export const NOTIFICATION_TYPES = ["info", "reminder", "result", "offer", "system"] as const;
+export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
+export type NotificationSource = "manual" | "exam_alert";
 
 export type MyNotification = {
   _id: string;
@@ -11,6 +15,7 @@ export type MyNotification = {
   type: NotificationType;
   link?: string;
   isRead: boolean;
+  source?: NotificationSource;
   createdAt: string;
 };
 
@@ -19,11 +24,9 @@ export type MyNotificationsPayload = {
   success?: boolean;
   count?: number;
   unreadCount: number;
+  hasMore?: boolean;
   data: MyNotification[];
 };
-
-/** Where exam-alert broadcasts point; the admin list tags rows with this link. */
-export const EXAM_ALERTS_PATH = "/dashboard/exam-alerts";
 
 /** Bell badge text: null hides the badge. */
 export function badgeText(unread: number): string | null {
@@ -71,4 +74,47 @@ export function markReadInPayload(
   });
   const unreadCount = id === undefined ? 0 : Math.max(0, payload.unreadCount - changed);
   return { ...payload, data, unreadCount };
+}
+
+/** "/x?y=1#h" → router-ready parts, so in-app links keep their query string. */
+export function splitInAppLink(link: string): {
+  to: string;
+  search: Record<string, string>;
+  hash: string | undefined;
+} {
+  const url = new URL(link, "http://in-app.local");
+  return {
+    to: url.pathname,
+    search: Object.fromEntries(url.searchParams),
+    hash: url.hash ? url.hash.slice(1) : undefined,
+  };
+}
+
+/** Chips on the student Notifications page. "exam_alert" is a source, the rest are types. */
+export type NotificationsFilter = "all" | NotificationType | "exam_alert";
+
+export const NOTIFICATION_FILTERS: { value: NotificationsFilter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "info", label: "Info" },
+  { value: "reminder", label: "Reminder" },
+  { value: "result", label: "Result" },
+  { value: "offer", label: "Offer" },
+  { value: "system", label: "System" },
+  { value: "exam_alert", label: "Exam alert" },
+];
+
+export const notificationsSearchSchema = z.object({
+  filter: z.enum([...NOTIFICATION_TYPES, "exam_alert"]).optional().catch(undefined),
+  unread: z.literal(true).optional().catch(undefined),
+});
+
+export function filterToParams(
+  filter: NotificationsFilter,
+  unread: boolean,
+): { type?: NotificationType; source?: NotificationSource; unread?: 1 } {
+  return {
+    ...(filter === "exam_alert" ? { source: "exam_alert" as const } : {}),
+    ...(filter !== "all" && filter !== "exam_alert" ? { type: filter } : {}),
+    ...(unread ? { unread: 1 as const } : {}),
+  };
 }
