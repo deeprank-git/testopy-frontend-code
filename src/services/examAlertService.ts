@@ -30,9 +30,12 @@ export async function adminCreateExamAlert(input: ExamAlertInput & { notify: boo
   return res.data as { success: boolean; data: unknown; notified: boolean };
 }
 
-export async function adminUpdateExamAlert(id: string, input: Partial<ExamAlertInput>) {
+export async function adminUpdateExamAlert(
+  id: string,
+  input: Partial<ExamAlertInput> & { notify?: boolean },
+) {
   const res = await axiosClient.patch(`/admin/exam-alerts/${id}`, input);
-  return res.data;
+  return res.data as { success: boolean; data: unknown; notified?: boolean };
 }
 
 export async function adminArchiveExamAlert(id: string) {
