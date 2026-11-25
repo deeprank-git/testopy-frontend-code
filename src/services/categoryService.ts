@@ -10,7 +10,12 @@ export async function getCategoryById(id: string) {
   return res.data;
 }
 
-export type CategoryInput = { name: string; description?: string; imageFile?: File | null; order?: number };
+export type CategoryInput = {
+  name: string;
+  description?: string;
+  imageFile?: File | null;
+  order?: number;
+};
 
 // Admin create/update are multipart: the backend reads the image from the
 // `categoryImage` multer field (routes/categoryAdminRoutes.js).
@@ -36,6 +41,12 @@ export async function createCategory(input: CategoryInput) {
 
 export async function updateCategory(id: string, input: Partial<CategoryInput>) {
   const res = await axiosClient.patch(`/admin/categories/${id}`, toCategoryFormData(input));
+  return res.data;
+}
+
+/** Admin-only: persist display sequence — `ids` in the order they should appear. */
+export async function reorderCategories(ids: string[]) {
+  const res = await axiosClient.patch("/admin/categories/reorder", { ids });
   return res.data;
 }
 

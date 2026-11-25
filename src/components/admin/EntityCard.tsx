@@ -28,6 +28,7 @@ export function EntityCard({
   badges,
   actions,
   muted,
+  dragHandle,
 }: {
   href: string;
   title: string;
@@ -36,6 +37,8 @@ export function EntityCard({
   badges?: ReactNode;
   actions?: CardAction[];
   muted?: boolean;
+  /** Optional handle (e.g. a sortable grip) overlaid on the top-left corner. */
+  dragHandle?: ReactNode;
 }) {
   return (
     <div
@@ -72,6 +75,7 @@ export function EntityCard({
           {badges && <div className="mt-3 flex flex-wrap gap-1.5">{badges}</div>}
         </div>
       </Link>
+      {dragHandle}
       {actions && actions.length > 0 && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
