@@ -25,6 +25,11 @@ export async function updateTest(id: string, data: Record<string, unknown>) {
   return res.data;
 }
 
+export async function restoreTest(id: string) {
+  const res = await axiosClient.patch(`/admin/tests/${id}`, { isActive: true });
+  return res.data;
+}
+
 export async function deleteTest(id: string) {
   const res = await axiosClient.delete(`/admin/tests/${id}`);
   return res.data;

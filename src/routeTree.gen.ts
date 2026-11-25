@@ -30,10 +30,12 @@ import { Route as AdminDashboardReportsRouteImport } from './routes/admin-dashbo
 import { Route as AdminDashboardQuestionsRouteImport } from './routes/admin-dashboard.questions'
 import { Route as AdminDashboardProfileRouteImport } from './routes/admin-dashboard.profile'
 import { Route as AdminDashboardNotificationsRouteImport } from './routes/admin-dashboard.notifications'
+import { Route as AdminDashboardExamAlertsRouteImport } from './routes/admin-dashboard.exam-alerts'
 import { Route as AdminDashboardCurrentAffairsRouteImport } from './routes/admin-dashboard.current-affairs'
 import { Route as AdminDashboardCategoriesRouteImport } from './routes/admin-dashboard.categories'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AdminDashboardExamsIndexRouteImport } from './routes/admin-dashboard.exams.index'
 import { Route as AuthenticatedDashboardIndexRouteImport } from './routes/_authenticated/dashboard.index'
 import { Route as AuthenticatedTestTestIdRouteImport } from './routes/_authenticated/test.$testId'
 import { Route as AuthenticatedResultAttemptIdRouteImport } from './routes/_authenticated/result.$attemptId'
@@ -41,15 +43,19 @@ import { Route as AuthenticatedDashboardRankRouteImport } from './routes/_authen
 import { Route as AuthenticatedDashboardProfileRouteImport } from './routes/_authenticated/dashboard.profile'
 import { Route as AuthenticatedDashboardPreviousYearPapersRouteImport } from './routes/_authenticated/dashboard.previous-year-papers'
 import { Route as AuthenticatedDashboardOverviewRouteImport } from './routes/_authenticated/dashboard.overview'
+import { Route as AuthenticatedDashboardNotificationsRouteImport } from './routes/_authenticated/dashboard.notifications'
 import { Route as AuthenticatedDashboardMockTestsRouteImport } from './routes/_authenticated/dashboard.mock-tests'
 import { Route as AuthenticatedDashboardExamAlertsRouteImport } from './routes/_authenticated/dashboard.exam-alerts'
 import { Route as AuthenticatedDashboardCurrentAffairsRouteImport } from './routes/_authenticated/dashboard.current-affairs'
 import { Route as AuthenticatedDashboardAttemptedTestsRouteImport } from './routes/_authenticated/dashboard.attempted-tests'
 import { Route as AuthenticatedDashboardAnswerKeyRouteImport } from './routes/_authenticated/dashboard.answer-key'
+import { Route as AdminDashboardExamsCategoryIdIndexRouteImport } from './routes/admin-dashboard.exams.$categoryId.index'
 import { Route as AuthenticatedTestTestIdInstructionsRouteImport } from './routes/_authenticated/test.$testId_.instructions'
 import { Route as AuthenticatedDashboardTestSeriesIdRouteImport } from './routes/_authenticated/dashboard.test-series.$id'
 import { Route as AuthenticatedDashboardCurrentAffairsBookmarkedRouteImport } from './routes/_authenticated/dashboard.current-affairs_.bookmarked'
 import { Route as AuthenticatedDashboardCurrentAffairsIdRouteImport } from './routes/_authenticated/dashboard.current-affairs_.$id'
+import { Route as AdminDashboardExamsCategoryIdSeriesIdIndexRouteImport } from './routes/admin-dashboard.exams.$categoryId.$seriesId.index'
+import { Route as AdminDashboardExamsCategoryIdSeriesIdTestIdRouteImport } from './routes/admin-dashboard.exams.$categoryId.$seriesId.$testId'
 
 const ExamsRoute = ExamsRouteImport.update({
   id: '/exams',
@@ -157,6 +163,12 @@ const AdminDashboardNotificationsRoute =
     path: '/notifications',
     getParentRoute: () => AdminDashboardRoute,
   } as any)
+const AdminDashboardExamAlertsRoute =
+  AdminDashboardExamAlertsRouteImport.update({
+    id: '/exam-alerts',
+    path: '/exam-alerts',
+    getParentRoute: () => AdminDashboardRoute,
+  } as any)
 const AdminDashboardCurrentAffairsRoute =
   AdminDashboardCurrentAffairsRouteImport.update({
     id: '/current-affairs',
@@ -179,6 +191,12 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AdminDashboardExamsIndexRoute =
+  AdminDashboardExamsIndexRouteImport.update({
+    id: '/exams/',
+    path: '/exams/',
+    getParentRoute: () => AdminDashboardRoute,
+  } as any)
 const AuthenticatedDashboardIndexRoute =
   AuthenticatedDashboardIndexRouteImport.update({
     id: '/',
@@ -220,6 +238,12 @@ const AuthenticatedDashboardOverviewRoute =
     path: '/overview',
     getParentRoute: () => AuthenticatedDashboardRoute,
   } as any)
+const AuthenticatedDashboardNotificationsRoute =
+  AuthenticatedDashboardNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AuthenticatedDashboardRoute,
+  } as any)
 const AuthenticatedDashboardMockTestsRoute =
   AuthenticatedDashboardMockTestsRouteImport.update({
     id: '/mock-tests',
@@ -250,6 +274,12 @@ const AuthenticatedDashboardAnswerKeyRoute =
     path: '/answer-key',
     getParentRoute: () => AuthenticatedDashboardRoute,
   } as any)
+const AdminDashboardExamsCategoryIdIndexRoute =
+  AdminDashboardExamsCategoryIdIndexRouteImport.update({
+    id: '/exams/$categoryId/',
+    path: '/exams/$categoryId/',
+    getParentRoute: () => AdminDashboardRoute,
+  } as any)
 const AuthenticatedTestTestIdInstructionsRoute =
   AuthenticatedTestTestIdInstructionsRouteImport.update({
     id: '/test/$testId_/instructions',
@@ -274,6 +304,18 @@ const AuthenticatedDashboardCurrentAffairsIdRoute =
     path: '/current-affairs/$id',
     getParentRoute: () => AuthenticatedDashboardRoute,
   } as any)
+const AdminDashboardExamsCategoryIdSeriesIdIndexRoute =
+  AdminDashboardExamsCategoryIdSeriesIdIndexRouteImport.update({
+    id: '/exams/$categoryId/$seriesId/',
+    path: '/exams/$categoryId/$seriesId/',
+    getParentRoute: () => AdminDashboardRoute,
+  } as any)
+const AdminDashboardExamsCategoryIdSeriesIdTestIdRoute =
+  AdminDashboardExamsCategoryIdSeriesIdTestIdRouteImport.update({
+    id: '/exams/$categoryId/$seriesId/$testId',
+    path: '/exams/$categoryId/$seriesId/$testId',
+    getParentRoute: () => AdminDashboardRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -288,6 +330,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRouteWithChildren
   '/admin-dashboard/categories': typeof AdminDashboardCategoriesRoute
   '/admin-dashboard/current-affairs': typeof AdminDashboardCurrentAffairsRoute
+  '/admin-dashboard/exam-alerts': typeof AdminDashboardExamAlertsRoute
   '/admin-dashboard/notifications': typeof AdminDashboardNotificationsRoute
   '/admin-dashboard/profile': typeof AdminDashboardProfileRoute
   '/admin-dashboard/questions': typeof AdminDashboardQuestionsRoute
@@ -305,6 +348,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/current-affairs': typeof AuthenticatedDashboardCurrentAffairsRoute
   '/dashboard/exam-alerts': typeof AuthenticatedDashboardExamAlertsRoute
   '/dashboard/mock-tests': typeof AuthenticatedDashboardMockTestsRoute
+  '/dashboard/notifications': typeof AuthenticatedDashboardNotificationsRoute
   '/dashboard/overview': typeof AuthenticatedDashboardOverviewRoute
   '/dashboard/previous-year-papers': typeof AuthenticatedDashboardPreviousYearPapersRoute
   '/dashboard/profile': typeof AuthenticatedDashboardProfileRoute
@@ -312,10 +356,14 @@ export interface FileRoutesByFullPath {
   '/result/$attemptId': typeof AuthenticatedResultAttemptIdRoute
   '/test/$testId': typeof AuthenticatedTestTestIdRoute
   '/dashboard/': typeof AuthenticatedDashboardIndexRoute
+  '/admin-dashboard/exams/': typeof AdminDashboardExamsIndexRoute
   '/dashboard/current-affairs/$id': typeof AuthenticatedDashboardCurrentAffairsIdRoute
   '/dashboard/current-affairs/bookmarked': typeof AuthenticatedDashboardCurrentAffairsBookmarkedRoute
   '/dashboard/test-series/$id': typeof AuthenticatedDashboardTestSeriesIdRoute
   '/test/$testId/instructions': typeof AuthenticatedTestTestIdInstructionsRoute
+  '/admin-dashboard/exams/$categoryId/': typeof AdminDashboardExamsCategoryIdIndexRoute
+  '/admin-dashboard/exams/$categoryId/$seriesId/$testId': typeof AdminDashboardExamsCategoryIdSeriesIdTestIdRoute
+  '/admin-dashboard/exams/$categoryId/$seriesId/': typeof AdminDashboardExamsCategoryIdSeriesIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -328,6 +376,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRoute
   '/admin-dashboard/categories': typeof AdminDashboardCategoriesRoute
   '/admin-dashboard/current-affairs': typeof AdminDashboardCurrentAffairsRoute
+  '/admin-dashboard/exam-alerts': typeof AdminDashboardExamAlertsRoute
   '/admin-dashboard/notifications': typeof AdminDashboardNotificationsRoute
   '/admin-dashboard/profile': typeof AdminDashboardProfileRoute
   '/admin-dashboard/questions': typeof AdminDashboardQuestionsRoute
@@ -345,6 +394,7 @@ export interface FileRoutesByTo {
   '/dashboard/current-affairs': typeof AuthenticatedDashboardCurrentAffairsRoute
   '/dashboard/exam-alerts': typeof AuthenticatedDashboardExamAlertsRoute
   '/dashboard/mock-tests': typeof AuthenticatedDashboardMockTestsRoute
+  '/dashboard/notifications': typeof AuthenticatedDashboardNotificationsRoute
   '/dashboard/overview': typeof AuthenticatedDashboardOverviewRoute
   '/dashboard/previous-year-papers': typeof AuthenticatedDashboardPreviousYearPapersRoute
   '/dashboard/profile': typeof AuthenticatedDashboardProfileRoute
@@ -352,10 +402,14 @@ export interface FileRoutesByTo {
   '/result/$attemptId': typeof AuthenticatedResultAttemptIdRoute
   '/test/$testId': typeof AuthenticatedTestTestIdRoute
   '/dashboard': typeof AuthenticatedDashboardIndexRoute
+  '/admin-dashboard/exams': typeof AdminDashboardExamsIndexRoute
   '/dashboard/current-affairs/$id': typeof AuthenticatedDashboardCurrentAffairsIdRoute
   '/dashboard/current-affairs/bookmarked': typeof AuthenticatedDashboardCurrentAffairsBookmarkedRoute
   '/dashboard/test-series/$id': typeof AuthenticatedDashboardTestSeriesIdRoute
   '/test/$testId/instructions': typeof AuthenticatedTestTestIdInstructionsRoute
+  '/admin-dashboard/exams/$categoryId': typeof AdminDashboardExamsCategoryIdIndexRoute
+  '/admin-dashboard/exams/$categoryId/$seriesId/$testId': typeof AdminDashboardExamsCategoryIdSeriesIdTestIdRoute
+  '/admin-dashboard/exams/$categoryId/$seriesId': typeof AdminDashboardExamsCategoryIdSeriesIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -372,6 +426,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRouteWithChildren
   '/admin-dashboard/categories': typeof AdminDashboardCategoriesRoute
   '/admin-dashboard/current-affairs': typeof AdminDashboardCurrentAffairsRoute
+  '/admin-dashboard/exam-alerts': typeof AdminDashboardExamAlertsRoute
   '/admin-dashboard/notifications': typeof AdminDashboardNotificationsRoute
   '/admin-dashboard/profile': typeof AdminDashboardProfileRoute
   '/admin-dashboard/questions': typeof AdminDashboardQuestionsRoute
@@ -389,6 +444,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard/current-affairs': typeof AuthenticatedDashboardCurrentAffairsRoute
   '/_authenticated/dashboard/exam-alerts': typeof AuthenticatedDashboardExamAlertsRoute
   '/_authenticated/dashboard/mock-tests': typeof AuthenticatedDashboardMockTestsRoute
+  '/_authenticated/dashboard/notifications': typeof AuthenticatedDashboardNotificationsRoute
   '/_authenticated/dashboard/overview': typeof AuthenticatedDashboardOverviewRoute
   '/_authenticated/dashboard/previous-year-papers': typeof AuthenticatedDashboardPreviousYearPapersRoute
   '/_authenticated/dashboard/profile': typeof AuthenticatedDashboardProfileRoute
@@ -396,10 +452,14 @@ export interface FileRoutesById {
   '/_authenticated/result/$attemptId': typeof AuthenticatedResultAttemptIdRoute
   '/_authenticated/test/$testId': typeof AuthenticatedTestTestIdRoute
   '/_authenticated/dashboard/': typeof AuthenticatedDashboardIndexRoute
+  '/admin-dashboard/exams/': typeof AdminDashboardExamsIndexRoute
   '/_authenticated/dashboard/current-affairs_/$id': typeof AuthenticatedDashboardCurrentAffairsIdRoute
   '/_authenticated/dashboard/current-affairs_/bookmarked': typeof AuthenticatedDashboardCurrentAffairsBookmarkedRoute
   '/_authenticated/dashboard/test-series/$id': typeof AuthenticatedDashboardTestSeriesIdRoute
   '/_authenticated/test/$testId_/instructions': typeof AuthenticatedTestTestIdInstructionsRoute
+  '/admin-dashboard/exams/$categoryId/': typeof AdminDashboardExamsCategoryIdIndexRoute
+  '/admin-dashboard/exams/$categoryId/$seriesId/$testId': typeof AdminDashboardExamsCategoryIdSeriesIdTestIdRoute
+  '/admin-dashboard/exams/$categoryId/$seriesId/': typeof AdminDashboardExamsCategoryIdSeriesIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -416,6 +476,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/admin-dashboard/categories'
     | '/admin-dashboard/current-affairs'
+    | '/admin-dashboard/exam-alerts'
     | '/admin-dashboard/notifications'
     | '/admin-dashboard/profile'
     | '/admin-dashboard/questions'
@@ -433,6 +494,7 @@ export interface FileRouteTypes {
     | '/dashboard/current-affairs'
     | '/dashboard/exam-alerts'
     | '/dashboard/mock-tests'
+    | '/dashboard/notifications'
     | '/dashboard/overview'
     | '/dashboard/previous-year-papers'
     | '/dashboard/profile'
@@ -440,10 +502,14 @@ export interface FileRouteTypes {
     | '/result/$attemptId'
     | '/test/$testId'
     | '/dashboard/'
+    | '/admin-dashboard/exams/'
     | '/dashboard/current-affairs/$id'
     | '/dashboard/current-affairs/bookmarked'
     | '/dashboard/test-series/$id'
     | '/test/$testId/instructions'
+    | '/admin-dashboard/exams/$categoryId/'
+    | '/admin-dashboard/exams/$categoryId/$seriesId/$testId'
+    | '/admin-dashboard/exams/$categoryId/$seriesId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -456,6 +522,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/admin-dashboard/categories'
     | '/admin-dashboard/current-affairs'
+    | '/admin-dashboard/exam-alerts'
     | '/admin-dashboard/notifications'
     | '/admin-dashboard/profile'
     | '/admin-dashboard/questions'
@@ -473,6 +540,7 @@ export interface FileRouteTypes {
     | '/dashboard/current-affairs'
     | '/dashboard/exam-alerts'
     | '/dashboard/mock-tests'
+    | '/dashboard/notifications'
     | '/dashboard/overview'
     | '/dashboard/previous-year-papers'
     | '/dashboard/profile'
@@ -480,10 +548,14 @@ export interface FileRouteTypes {
     | '/result/$attemptId'
     | '/test/$testId'
     | '/dashboard'
+    | '/admin-dashboard/exams'
     | '/dashboard/current-affairs/$id'
     | '/dashboard/current-affairs/bookmarked'
     | '/dashboard/test-series/$id'
     | '/test/$testId/instructions'
+    | '/admin-dashboard/exams/$categoryId'
+    | '/admin-dashboard/exams/$categoryId/$seriesId/$testId'
+    | '/admin-dashboard/exams/$categoryId/$seriesId'
   id:
     | '__root__'
     | '/'
@@ -499,6 +571,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/admin-dashboard/categories'
     | '/admin-dashboard/current-affairs'
+    | '/admin-dashboard/exam-alerts'
     | '/admin-dashboard/notifications'
     | '/admin-dashboard/profile'
     | '/admin-dashboard/questions'
@@ -516,6 +589,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard/current-affairs'
     | '/_authenticated/dashboard/exam-alerts'
     | '/_authenticated/dashboard/mock-tests'
+    | '/_authenticated/dashboard/notifications'
     | '/_authenticated/dashboard/overview'
     | '/_authenticated/dashboard/previous-year-papers'
     | '/_authenticated/dashboard/profile'
@@ -523,10 +597,14 @@ export interface FileRouteTypes {
     | '/_authenticated/result/$attemptId'
     | '/_authenticated/test/$testId'
     | '/_authenticated/dashboard/'
+    | '/admin-dashboard/exams/'
     | '/_authenticated/dashboard/current-affairs_/$id'
     | '/_authenticated/dashboard/current-affairs_/bookmarked'
     | '/_authenticated/dashboard/test-series/$id'
     | '/_authenticated/test/$testId_/instructions'
+    | '/admin-dashboard/exams/$categoryId/'
+    | '/admin-dashboard/exams/$categoryId/$seriesId/$testId'
+    | '/admin-dashboard/exams/$categoryId/$seriesId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -693,6 +771,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDashboardNotificationsRouteImport
       parentRoute: typeof AdminDashboardRoute
     }
+    '/admin-dashboard/exam-alerts': {
+      id: '/admin-dashboard/exam-alerts'
+      path: '/exam-alerts'
+      fullPath: '/admin-dashboard/exam-alerts'
+      preLoaderRoute: typeof AdminDashboardExamAlertsRouteImport
+      parentRoute: typeof AdminDashboardRoute
+    }
     '/admin-dashboard/current-affairs': {
       id: '/admin-dashboard/current-affairs'
       path: '/current-affairs'
@@ -720,6 +805,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin'
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/admin-dashboard/exams/': {
+      id: '/admin-dashboard/exams/'
+      path: '/exams'
+      fullPath: '/admin-dashboard/exams/'
+      preLoaderRoute: typeof AdminDashboardExamsIndexRouteImport
+      parentRoute: typeof AdminDashboardRoute
     }
     '/_authenticated/dashboard/': {
       id: '/_authenticated/dashboard/'
@@ -770,6 +862,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardOverviewRouteImport
       parentRoute: typeof AuthenticatedDashboardRoute
     }
+    '/_authenticated/dashboard/notifications': {
+      id: '/_authenticated/dashboard/notifications'
+      path: '/notifications'
+      fullPath: '/dashboard/notifications'
+      preLoaderRoute: typeof AuthenticatedDashboardNotificationsRouteImport
+      parentRoute: typeof AuthenticatedDashboardRoute
+    }
     '/_authenticated/dashboard/mock-tests': {
       id: '/_authenticated/dashboard/mock-tests'
       path: '/mock-tests'
@@ -805,6 +904,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardAnswerKeyRouteImport
       parentRoute: typeof AuthenticatedDashboardRoute
     }
+    '/admin-dashboard/exams/$categoryId/': {
+      id: '/admin-dashboard/exams/$categoryId/'
+      path: '/exams/$categoryId'
+      fullPath: '/admin-dashboard/exams/$categoryId/'
+      preLoaderRoute: typeof AdminDashboardExamsCategoryIdIndexRouteImport
+      parentRoute: typeof AdminDashboardRoute
+    }
     '/_authenticated/test/$testId_/instructions': {
       id: '/_authenticated/test/$testId_/instructions'
       path: '/test/$testId/instructions'
@@ -833,6 +939,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardCurrentAffairsIdRouteImport
       parentRoute: typeof AuthenticatedDashboardRoute
     }
+    '/admin-dashboard/exams/$categoryId/$seriesId/': {
+      id: '/admin-dashboard/exams/$categoryId/$seriesId/'
+      path: '/exams/$categoryId/$seriesId'
+      fullPath: '/admin-dashboard/exams/$categoryId/$seriesId/'
+      preLoaderRoute: typeof AdminDashboardExamsCategoryIdSeriesIdIndexRouteImport
+      parentRoute: typeof AdminDashboardRoute
+    }
+    '/admin-dashboard/exams/$categoryId/$seriesId/$testId': {
+      id: '/admin-dashboard/exams/$categoryId/$seriesId/$testId'
+      path: '/exams/$categoryId/$seriesId/$testId'
+      fullPath: '/admin-dashboard/exams/$categoryId/$seriesId/$testId'
+      preLoaderRoute: typeof AdminDashboardExamsCategoryIdSeriesIdTestIdRouteImport
+      parentRoute: typeof AdminDashboardRoute
+    }
   }
 }
 
@@ -842,6 +962,7 @@ interface AuthenticatedDashboardRouteChildren {
   AuthenticatedDashboardCurrentAffairsRoute: typeof AuthenticatedDashboardCurrentAffairsRoute
   AuthenticatedDashboardExamAlertsRoute: typeof AuthenticatedDashboardExamAlertsRoute
   AuthenticatedDashboardMockTestsRoute: typeof AuthenticatedDashboardMockTestsRoute
+  AuthenticatedDashboardNotificationsRoute: typeof AuthenticatedDashboardNotificationsRoute
   AuthenticatedDashboardOverviewRoute: typeof AuthenticatedDashboardOverviewRoute
   AuthenticatedDashboardPreviousYearPapersRoute: typeof AuthenticatedDashboardPreviousYearPapersRoute
   AuthenticatedDashboardProfileRoute: typeof AuthenticatedDashboardProfileRoute
@@ -862,6 +983,8 @@ const AuthenticatedDashboardRouteChildren: AuthenticatedDashboardRouteChildren =
     AuthenticatedDashboardExamAlertsRoute:
       AuthenticatedDashboardExamAlertsRoute,
     AuthenticatedDashboardMockTestsRoute: AuthenticatedDashboardMockTestsRoute,
+    AuthenticatedDashboardNotificationsRoute:
+      AuthenticatedDashboardNotificationsRoute,
     AuthenticatedDashboardOverviewRoute: AuthenticatedDashboardOverviewRoute,
     AuthenticatedDashboardPreviousYearPapersRoute:
       AuthenticatedDashboardPreviousYearPapersRoute,
@@ -904,6 +1027,7 @@ const AuthenticatedRouteRouteWithChildren =
 interface AdminDashboardRouteChildren {
   AdminDashboardCategoriesRoute: typeof AdminDashboardCategoriesRoute
   AdminDashboardCurrentAffairsRoute: typeof AdminDashboardCurrentAffairsRoute
+  AdminDashboardExamAlertsRoute: typeof AdminDashboardExamAlertsRoute
   AdminDashboardNotificationsRoute: typeof AdminDashboardNotificationsRoute
   AdminDashboardProfileRoute: typeof AdminDashboardProfileRoute
   AdminDashboardQuestionsRoute: typeof AdminDashboardQuestionsRoute
@@ -913,11 +1037,16 @@ interface AdminDashboardRouteChildren {
   AdminDashboardTestsRoute: typeof AdminDashboardTestsRoute
   AdminDashboardUsersRoute: typeof AdminDashboardUsersRoute
   AdminDashboardIndexRoute: typeof AdminDashboardIndexRoute
+  AdminDashboardExamsIndexRoute: typeof AdminDashboardExamsIndexRoute
+  AdminDashboardExamsCategoryIdIndexRoute: typeof AdminDashboardExamsCategoryIdIndexRoute
+  AdminDashboardExamsCategoryIdSeriesIdTestIdRoute: typeof AdminDashboardExamsCategoryIdSeriesIdTestIdRoute
+  AdminDashboardExamsCategoryIdSeriesIdIndexRoute: typeof AdminDashboardExamsCategoryIdSeriesIdIndexRoute
 }
 
 const AdminDashboardRouteChildren: AdminDashboardRouteChildren = {
   AdminDashboardCategoriesRoute: AdminDashboardCategoriesRoute,
   AdminDashboardCurrentAffairsRoute: AdminDashboardCurrentAffairsRoute,
+  AdminDashboardExamAlertsRoute: AdminDashboardExamAlertsRoute,
   AdminDashboardNotificationsRoute: AdminDashboardNotificationsRoute,
   AdminDashboardProfileRoute: AdminDashboardProfileRoute,
   AdminDashboardQuestionsRoute: AdminDashboardQuestionsRoute,
@@ -927,6 +1056,13 @@ const AdminDashboardRouteChildren: AdminDashboardRouteChildren = {
   AdminDashboardTestsRoute: AdminDashboardTestsRoute,
   AdminDashboardUsersRoute: AdminDashboardUsersRoute,
   AdminDashboardIndexRoute: AdminDashboardIndexRoute,
+  AdminDashboardExamsIndexRoute: AdminDashboardExamsIndexRoute,
+  AdminDashboardExamsCategoryIdIndexRoute:
+    AdminDashboardExamsCategoryIdIndexRoute,
+  AdminDashboardExamsCategoryIdSeriesIdTestIdRoute:
+    AdminDashboardExamsCategoryIdSeriesIdTestIdRoute,
+  AdminDashboardExamsCategoryIdSeriesIdIndexRoute:
+    AdminDashboardExamsCategoryIdSeriesIdIndexRoute,
 }
 
 const AdminDashboardRouteWithChildren = AdminDashboardRoute._addFileChildren(

@@ -1,6 +1,10 @@
 import axiosClient from "@/api/axiosClient";
 
-export async function getTestSeries(params?: { category?: string; isActive?: boolean; isPublished?: boolean }) {
+export async function getTestSeries(params?: {
+  category?: string;
+  isActive?: boolean;
+  isPublished?: boolean;
+}) {
   const res = await axiosClient.get("/test-series", { params });
   return res.data;
 }
@@ -10,54 +14,59 @@ export async function getTestSeriesById(id: string) {
   return res.data;
 }
 
+export type ImportantDates = Record<string, { from: string; to: string }>;
+
 export type TestSeriesInput = {
-  name?: string;
-  category?: string;
-  description?: string;
-  isActive?: boolean;
-  isPublished?: boolean;
-  isPaid?: boolean;
-  price?: number;
-  negativeMarking?: boolean;
-  negativeMarksPerQuestion?: number;
-  marksPerQuestion?: number;
-  importantDates?: Record<string, { from: string; to: string }>;
-  image?: File;
-  notificationPdf?: File;
-  applyLink?: string;
-  officialWebsite?: string;
+  name: string;
+  description: string;
+  category: string;
+  isPaid: boolean;
+  price: number;
+  marksPerQuestion: number;
+  negativeMarking: boolean;
+  negativeMarksPerQuestion: number;
+  officialWebsite: string;
+  applyLink: string;
+  importantDates: ImportantDates;
   order?: number;
+  imageFile?: File | null;
+  notificationPdfFile?: File | null;
 };
 
-// Create/update are multipart/form-data (see Testopy-Backend-Workflow-and-Status.md
-// §5) so the series image can be uploaded as a real file, and importantDates rides
-// along as a JSON-stringified text field rather than raw JSON.
-function buildTestSeriesForm(data: TestSeriesInput) {
-  const form = new FormData();
-  Object.entries(data).forEach(([key, value]) => {
-    if (value === undefined) return;
-    if (key === "importantDates") {
-      form.append(key, JSON.stringify(value));
-    } else if (value instanceof File) {
-      form.append(key, value);
-    } else {
-      form.append(key, String(value));
-    }
-  });
-  return form;
+// Admin create/update are multipart (routes/testSeriesAdminRoutes.js reads
+// `image` and `notificationPdf` files); importantDates travels as a JSON string.
+function toSeriesFormData(input: Partial<TestSeriesInput> & { isPublished?: boolean }) {
+  const fd = new FormData();
+  for (const [key, value] of Object.entries(input)) {
+    if (
+      value === undefined ||
+      value === null ||
+      key === "imageFile" ||
+      key === "notificationPdfFile"
+    )
+      continue;
+    fd.append(key, key === "importantDates" ? JSON.stringify(value) : String(value));
+  }
+  if (input.imageFile) fd.append("image", input.imageFile);
+  if (input.notificationPdfFile) fd.append("notificationPdf", input.notificationPdfFile);
+  return fd;
 }
 
-export async function createTestSeries(data: TestSeriesInput) {
-  const res = await axiosClient.post("/admin/test-series", buildTestSeriesForm(data), {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+export async function createTestSeries(input: TestSeriesInput) {
+  const res = await axiosClient.post("/admin/test-series", toSeriesFormData(input));
   return res.data;
 }
 
-export async function updateTestSeries(id: string, data: TestSeriesInput) {
-  const res = await axiosClient.patch(`/admin/test-series/${id}`, buildTestSeriesForm(data), {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+export async function updateTestSeries(
+  id: string,
+  input: Partial<TestSeriesInput> & { isPublished?: boolean },
+) {
+  const res = await axiosClient.patch(`/admin/test-series/${id}`, toSeriesFormData(input));
+  return res.data;
+}
+
+export async function restoreTestSeries(id: string) {
+  const res = await axiosClient.patch(`/admin/test-series/${id}`, { isActive: true });
   return res.data;
 }
 

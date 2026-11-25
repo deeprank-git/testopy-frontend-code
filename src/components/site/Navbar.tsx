@@ -6,6 +6,7 @@ import { Search, Menu, X, LogOut, LayoutDashboard, User as UserIcon } from "luci
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Logo } from "./Logo";
+import { NotificationBell } from "./NotificationBell";
 import { useAuth } from "@/hooks/use-auth";
 import * as authService from "@/services/authService";
 import * as searchService from "@/services/searchService";
@@ -116,6 +117,7 @@ export function Navbar() {
         <div className="ml-auto md:ml-0 flex items-center gap-2">
           {user ? (
             <>
+              <NotificationBell />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-2 rounded-full pl-1 pr-3 py-1 hover:bg-muted transition">

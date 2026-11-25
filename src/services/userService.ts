@@ -30,7 +30,14 @@ export async function updateMe(data: {
   return res.data;
 }
 
-export async function getAllUsers(params?: { role?: string; isActive?: boolean }) {
+export async function getAllUsers(params?: {
+  role?: string;
+  isActive?: boolean;
+  /** Name or email, case-insensitive. */
+  search?: string;
+  /** 1..100. Omit to get every matching user. */
+  limit?: number;
+}) {
   const res = await axiosClient.get("/admin/users", { params });
   return res.data;
 }

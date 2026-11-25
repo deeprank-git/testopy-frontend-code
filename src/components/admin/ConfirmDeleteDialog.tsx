@@ -17,8 +17,10 @@ interface ConfirmDeleteDialogProps {
   itemLabel?: string;
   /** Override the entire description text */
   description?: string;
-  /** Override the confirm button label (default: "Delete") */
+  /** Override the confirm button label (default: "Delete", or "Archive" in archive mode) */
   confirmLabel?: string;
+  /** "archive" = soft delete wording (item can be restored). Default "delete". */
+  mode?: "delete" | "archive";
 }
 
 export function ConfirmDeleteDialog({
@@ -28,7 +30,8 @@ export function ConfirmDeleteDialog({
   isPending = false,
   itemLabel = "this item",
   description,
-  confirmLabel = "Delete",
+  confirmLabel,
+  mode = "delete",
 }: ConfirmDeleteDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -37,13 +40,17 @@ export function ConfirmDeleteDialog({
           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
           <AlertDialogDescription>
             {description ??
-              `Are you sure you want to delete ${itemLabel}? This action cannot be undone.`}
+              (mode === "archive"
+                ? `Archive ${itemLabel}? It will be hidden from students. You can restore it from the Archived filter.`
+                : `Are you sure you want to delete ${itemLabel}? This action cannot be undone.`)}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
           <AlertDialogAction onClick={onConfirm} disabled={isPending}>
-            {isPending ? "Please wait…" : confirmLabel}
+            {isPending
+              ? "Please wait…"
+              : (confirmLabel ?? (mode === "archive" ? "Archive" : "Delete"))}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
