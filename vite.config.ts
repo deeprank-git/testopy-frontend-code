@@ -12,4 +12,8 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  // Production runs under PM2 from .output/server/index.mjs — build a Node server, not the Cloudflare default.
+  nitro: {
+    preset: "node-server",
+  },
 });

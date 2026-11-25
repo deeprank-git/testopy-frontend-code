@@ -2,6 +2,7 @@ import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-route
 import {
   Bell,
   BookOpen,
+  CalendarClock,
   Flag,
   LayoutDashboard,
   LogOut,
@@ -45,6 +46,7 @@ const NAV: NavItem[] = [
   { to: "/admin-dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/admin-dashboard/exams", label: "Exams", icon: BookOpen },
   { to: "/admin-dashboard/current-affairs", label: "Current Affairs", icon: Newspaper },
+  { to: "/admin-dashboard/exam-alerts", label: "Exam Alerts", icon: CalendarClock },
   { to: "/admin-dashboard/users", label: "Users", icon: Users },
   { to: "/admin-dashboard/reports", label: "Reports", icon: Flag },
   { to: "/admin-dashboard/notifications", label: "Notifications", icon: Bell },
