@@ -10,7 +10,7 @@ export async function getCategoryById(id: string) {
   return res.data;
 }
 
-export type CategoryInput = { name: string; description?: string; imageFile?: File | null };
+export type CategoryInput = { name: string; description?: string; imageFile?: File | null; order?: number };
 
 // Admin create/update are multipart: the backend reads the image from the
 // `categoryImage` multer field (routes/categoryAdminRoutes.js).
@@ -18,6 +18,7 @@ function toCategoryFormData(input: Partial<CategoryInput>) {
   const fd = new FormData();
   if (input.name !== undefined) fd.append("name", input.name);
   if (input.description !== undefined) fd.append("description", input.description);
+  if (input.order !== undefined) fd.append("order", String(input.order));
   if (input.imageFile) fd.append("categoryImage", input.imageFile);
   return fd;
 }

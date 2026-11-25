@@ -28,6 +28,7 @@ export type TestSeriesInput = {
   officialWebsite: string;
   applyLink: string;
   importantDates: ImportantDates;
+  order?: number;
   imageFile?: File | null;
   notificationPdfFile?: File | null;
 };
