@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ImagePlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { resolveMediaUrl } from "@/services/mediaService";
 
 /** File picker with a thumbnail preview of the current or newly chosen image. */
 export function ImageField({
@@ -14,17 +15,18 @@ export function ImageField({
   onFileChange: (f: File | null) => void;
   accept?: string;
 }) {
-  const [preview, setPreview] = useState<string | undefined>(currentUrl);
+  const resolvedCurrent = currentUrl ? resolveMediaUrl(currentUrl) : undefined;
+  const [preview, setPreview] = useState<string | undefined>(resolvedCurrent);
 
   useEffect(() => {
     if (!file) {
-      setPreview(currentUrl || undefined);
+      setPreview(resolvedCurrent);
       return;
     }
     const url = URL.createObjectURL(file);
     setPreview(url);
     return () => URL.revokeObjectURL(url);
-  }, [file, currentUrl]);
+  }, [file, resolvedCurrent]);
 
   return (
     <div className="flex items-center gap-4">

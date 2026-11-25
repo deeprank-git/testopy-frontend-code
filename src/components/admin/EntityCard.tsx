@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { colorFor } from "@/lib/admin/ui-helpers";
+import { resolveMediaUrl } from "@/services/mediaService";
 
 export type CardAction = {
   label: string;
@@ -50,7 +51,7 @@ export function EntityCard({
         <div className="aspect-[16/9] w-full overflow-hidden bg-muted">
           {image ? (
             <img
-              src={image}
+              src={resolveMediaUrl(image)}
               alt=""
               className="size-full object-cover transition duration-300 group-hover:scale-[1.03]"
             />

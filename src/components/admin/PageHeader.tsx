@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { colorFor } from "@/lib/admin/ui-helpers";
+import { resolveMediaUrl } from "@/services/mediaService";
 
 export function PageHeader({
   title,
@@ -41,7 +42,7 @@ export function PageHeader({
 export function HeaderMedia({ image, name }: { image?: string; name: string }) {
   return image ? (
     <img
-      src={image}
+      src={resolveMediaUrl(image)}
       alt=""
       className="size-14 shrink-0 rounded-xl border border-border object-cover"
     />
