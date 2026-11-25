@@ -1,4 +1,5 @@
-import { useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, CheckCheck } from "lucide-react";
 import { toast } from "sonner";
@@ -12,10 +13,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/use-auth";
+import { useOpenLink } from "@/hooks/use-open-link";
 import { isNotFound } from "@/lib/admin/ui-helpers";
 import {
   badgeText,
-  isExternalLink,
   markReadInPayload,
   timeAgo,
   type MyNotification,
@@ -24,13 +25,16 @@ import {
 import { cn } from "@/lib/utils";
 import * as notificationService from "@/services/notificationService";
 
-const QUERY_KEY = ["my-notifications"] as const;
+// The Notifications page shares the "my-notifications" prefix; invalidating it refreshes both.
+const QUERY_KEY = ["my-notifications", "bell"] as const;
+const PREFIX = ["my-notifications"] as const;
 type Ctx = { previous?: MyNotificationsPayload };
 
 /** Bell + dropdown used by the public navbar and the student dashboard header. */
 export function NotificationBell() {
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const openLink = useOpenLink();
+  const [open, setOpen] = useState(false);
   const qc = useQueryClient();
 
   const query = useQuery({
@@ -38,7 +42,9 @@ export function NotificationBell() {
     queryFn: () => notificationService.getMyNotifications({ limit: 10 }),
     enabled: !!user,
     refetchOnWindowFocus: true,
-    refetchInterval: 2 * 60 * 1000,
+    // Picks up new and admin-deleted notifications. Paused while the tab is hidden
+    // (refetchIntervalInBackground defaults to false); refetchOnWindowFocus covers return.
+    refetchInterval: 30 * 1000,
   });
 
   // Optimistic update shared by "mark one" (id) and "mark all" (no id).
@@ -54,7 +60,7 @@ export function NotificationBell() {
     qc.setQueryData(QUERY_KEY, ctx?.previous);
     toast.error("Couldn't update notifications");
   };
-  const refetch = () => qc.invalidateQueries({ queryKey: QUERY_KEY });
+  const refetch = () => qc.invalidateQueries({ queryKey: PREFIX });
 
   const markOne = useMutation({
     mutationFn: (id: string) => notificationService.markNotificationRead(id),
@@ -77,13 +83,11 @@ export function NotificationBell() {
 
   const openNotification = (n: MyNotification) => {
     if (!n.isRead) markOne.mutate(n._id);
-    if (!n.link) return;
-    if (isExternalLink(n.link)) window.open(n.link, "_blank", "noopener,noreferrer");
-    else navigate({ to: n.link as never });
+    openLink(n.link);
   };
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button
           size="icon"
@@ -102,19 +106,28 @@ export function NotificationBell() {
       <DropdownMenuContent align="end" className="w-80 p-0">
         <DropdownMenuLabel className="flex items-center justify-between px-3 py-2">
           <span>Notifications</span>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2 text-xs"
-            disabled={unread === 0 || markAll.isPending}
-            onClick={(e) => {
-              e.preventDefault();
-              markAll.mutate();
-            }}
-          >
-            <CheckCheck className="mr-1 h-3.5 w-3.5" /> Mark all as read
-          </Button>
+          <div className="flex items-center gap-1">
+            <Link
+              to="/dashboard/notifications"
+              onClick={() => setOpen(false)}
+              className="rounded px-2 text-xs font-medium text-primary hover:underline"
+            >
+              View all
+            </Link>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs"
+              disabled={unread === 0 || markAll.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                markAll.mutate();
+              }}
+            >
+              <CheckCheck className="mr-1 h-3.5 w-3.5" /> Mark all as read
+            </Button>
+          </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator className="m-0" />
         <div className="max-h-96 overflow-y-auto py-1">

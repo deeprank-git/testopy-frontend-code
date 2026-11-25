@@ -1,12 +1,10 @@
 import { describe, it, expect } from "vitest";
 import {
   alertDay,
-  alertStats,
   alertStatus,
-  daysUntilLabel,
-  filterAlerts,
+  alertListParams,
   formatAlertDate,
-  upcomingSoon,
+  withAlertCategories,
   type AlertFilters,
   type ExamAlert,
 } from "./exam-alerts";
@@ -51,62 +49,40 @@ describe("alertStatus", () => {
   });
 });
 
-describe("daysUntilLabel", () => {
-  it.each([
-    ["2026-11-24", "Today"],
-    ["2026-11-25", "Tomorrow"],
-    ["2026-11-29", "In 5 days"],
-    ["2026-11-20", "Past"],
-  ])("%s → %s", (ymd, label) => {
-    expect(daysUntilLabel(alert({ date: `${ymd}T00:00:00.000Z` }), NOW)).toBe(label);
-  });
-});
-
-describe("alertStats", () => {
-  it("counts upcoming exam dates, alerts created this week, and total", () => {
-    const stats = alertStats(
-      [
-        alert({ type: "exam_date", date: "2026-12-01T00:00:00.000Z" }), // upcoming exam
-        alert({ type: "exam_date", date: "2026-11-01T00:00:00.000Z" }), // past exam
-        alert({ type: "result", date: "2026-12-01T00:00:00.000Z" }), // upcoming, not an exam
-        alert({ createdAt: new Date(NOW.getTime() - 2 * 86_400_000).toISOString() }), // new
-      ],
-      NOW,
-    );
-    expect(stats).toEqual({ upcomingExams: 2, newThisWeek: 1, total: 4 });
-  });
-});
-
-describe("filterAlerts", () => {
-  const ssc = { _id: "c1", name: "SSC" };
-  const rows = [
-    alert({ _id: "x1", type: "exam_date", date: "2026-12-05T00:00:00.000Z", category: ssc }),
-    alert({ _id: "x2", type: "registration", date: "2026-12-20T00:00:00.000Z" }),
-    alert({ _id: "x3", type: "result", date: "2026-10-01T00:00:00.000Z", category: ssc }),
-  ];
-  const ids = (f: Partial<AlertFilters>) =>
-    filterAlerts(rows, { ...ALL, ...f }, NOW).map((a) => a._id);
-
-  it("returns everything with no filters", () => expect(ids({})).toEqual(["x1", "x2", "x3"]));
-  it("filters by tab", () => expect(ids({ tab: "registration" })).toEqual(["x2"]));
-  it("filters by type", () => expect(ids({ type: "result" })).toEqual(["x3"]));
-  it("filters by category", () => expect(ids({ category: "c1" })).toEqual(["x1", "x3"]));
-  it("filters by month (MM)", () => expect(ids({ month: "12" })).toEqual(["x1", "x2"]));
-  it("filters by status", () => {
-    expect(ids({ status: "upcoming" })).toEqual(["x1", "x2"]);
-    expect(ids({ status: "past" })).toEqual(["x3"]);
-  });
-  it("combines filters", () => expect(ids({ category: "c1", status: "upcoming" })).toEqual(["x1"]));
-});
-
-describe("upcomingSoon", () => {
-  it("returns upcoming alerts soonest first, capped", () => {
-    const rows = [
-      alert({ _id: "late", date: "2026-12-20T00:00:00.000Z" }),
-      alert({ _id: "past", date: "2026-11-01T00:00:00.000Z" }),
-      alert({ _id: "soon", date: "2026-11-25T00:00:00.000Z" }),
-      alert({ _id: "mid", date: "2026-12-01T00:00:00.000Z" }),
+describe("withAlertCategories", () => {
+  it("adds categories that only appear on alerts (e.g. archived), once, after the active ones", () => {
+    const active = [{ _id: "c1", name: "SSC" }];
+    const alerts = [
+      alert({ category: { _id: "c1", name: "SSC" } }),
+      alert({ category: { _id: "c9", name: "Old" } }),
+      alert({ category: { _id: "c9", name: "Old" } }),
+      alert({ category: null }),
     ];
-    expect(upcomingSoon(rows, 2, NOW).map((a) => a._id)).toEqual(["soon", "mid"]);
+    expect(withAlertCategories(active, alerts)).toEqual([
+      { _id: "c1", name: "SSC" },
+      { _id: "c9", name: "Old" },
+    ]);
+  });
+});
+
+describe("alertListParams", () => {
+  const TODAY = "2026-11-24";
+  it("sends nothing for no filters", () => {
+    expect(alertListParams(ALL, TODAY)).toEqual({});
+  });
+  it("maps the tab or the type dropdown to type", () => {
+    expect(alertListParams({ ...ALL, tab: "result" }, TODAY)).toEqual({ type: "result" });
+    expect(alertListParams({ ...ALL, type: "admit_card" }, TODAY)).toEqual({ type: "admit_card" });
+    expect(alertListParams({ ...ALL, tab: "result", type: "result" }, TODAY)).toEqual({
+      type: "result",
+    });
+  });
+  it("returns null when the tab and type dropdown disagree (nothing can match)", () => {
+    expect(alertListParams({ ...ALL, tab: "result", type: "admit_card" }, TODAY)).toBeNull();
+  });
+  it("maps category, month of year, and status with today", () => {
+    expect(
+      alertListParams({ ...ALL, category: "c1", month: "12", status: "upcoming" }, TODAY),
+    ).toEqual({ category: "c1", monthOfYear: "12", status: "upcoming", today: TODAY });
   });
 });

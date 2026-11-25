@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { createFileRoute, useBlocker } from "@tanstack/react-router";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { BellRing, Check, ChevronsUpDown, MoreHorizontal, Send } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,6 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Command,
-  CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
@@ -39,11 +38,11 @@ import {
 } from "@/components/ui/table";
 import { unwrapList } from "@/lib/api-unwrap";
 import { apiError } from "@/lib/admin/ui-helpers";
-import { EXAM_ALERTS_PATH, isValidLink, type NotificationType } from "@/lib/notifications";
+import { isValidLink, type NotificationSource, type NotificationType } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
 import * as notificationService from "@/services/notificationService";
 import * as userService from "@/services/userService";
-import { usePaginatedSearch } from "@/hooks/use-paginated-search";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { useBreadcrumbs } from "@/components/admin/breadcrumbs";
 import { DataCard, SearchInput } from "@/components/admin/DataCard";
@@ -66,6 +65,8 @@ type SentNotification = {
   type: NotificationType;
   link?: string;
   user: Student | null;
+  audience: "all" | "student";
+  source: NotificationSource;
   readCount?: number;
   createdAt: string;
 };
@@ -90,6 +91,7 @@ type Form = {
   link: string;
 };
 const EMPTY: Form = { title: "", message: "", type: "info", recipient: null, link: "" };
+const PICKER_LIMIT = 20;
 
 const studentLabel = (s: Student) => (s.name ? `${s.name} (${s.email})` : s.email);
 
@@ -104,22 +106,42 @@ function NotificationsPage() {
   const set = <K extends keyof Form>(key: K, value: Form[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
 
-  const { data: usersRes } = useQuery({
-    queryKey: ["admin", "notify-students"],
-    queryFn: () => userService.getAllUsers({ role: "student" }),
+  // Recipient picker searches on the server, so it stays fast with many students.
+  const [pickerSearch, setPickerSearch] = useState("");
+  const studentSearch = useDebouncedValue(pickerSearch.trim());
+  const studentsQuery = useQuery({
+    queryKey: ["admin", "notify-students", studentSearch],
+    queryFn: () =>
+      userService.getAllUsers({
+        role: "student",
+        search: studentSearch || undefined,
+        limit: PICKER_LIMIT,
+      }),
+    enabled: pickerOpen,
+    placeholderData: keepPreviousData,
   });
-  const students = unwrapList<Student>(usersRes);
+  const students = unwrapList<Student>(studentsQuery.data);
 
+  // Sent list pages and searches on the server, so older notifications stay reachable.
+  const [search, setSearchRaw] = useState("");
+  const [page, setPage] = useState(1);
+  const sentSearch = useDebouncedValue(search.trim());
+  const setSearch = (v: string) => {
+    setSearchRaw(v);
+    setPage(1);
+  };
   const sentQuery = useQuery({
-    queryKey: ["admin", "notifications"],
-    queryFn: () => notificationService.adminGetNotifications({ limit: 100 }),
+    queryKey: ["admin", "notifications", { page, search: sentSearch }],
+    queryFn: () =>
+      notificationService.adminGetNotifications({ page, search: sentSearch || undefined }),
+    placeholderData: keepPreviousData,
   });
-  const sent = unwrapList<SentNotification>(sentQuery.data);
-  const { search, setSearch, paginated, page, setPage, totalPages } = usePaginatedSearch(
-    sent as unknown as Record<string, unknown>[],
-    ["title", "message"],
-  );
-  const rows = paginated as unknown as SentNotification[];
+  const rows = unwrapList<SentNotification>(sentQuery.data);
+  const totalPages: number = sentQuery.data?.totalPages ?? 1;
+  // Deleting the last row of the last page leaves us past the end: step back.
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
 
   const errors = {
     title: form.title.trim() ? undefined : "Title is required",
@@ -147,6 +169,14 @@ function NotificationsPage() {
       setSubmitted(false);
     },
     onError: (e) => toast.error(apiError(e, "Could not send notification")),
+  });
+
+  // Like the drawers: ask before throwing away a half-written message.
+  const dirty = JSON.stringify(form) !== JSON.stringify(EMPTY) && !sendMut.isPending;
+  useBlocker({
+    shouldBlockFn: () => !window.confirm("Discard this unsaved message?"),
+    enableBeforeUnload: () => dirty,
+    disabled: !dirty,
   });
 
   const deleteMut = useMutation({
@@ -217,7 +247,13 @@ function NotificationsPage() {
             </div>
             <div className="space-y-2">
               <Label>Recipient</Label>
-              <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+              <Popover
+                open={pickerOpen}
+                onOpenChange={(o) => {
+                  setPickerOpen(o);
+                  if (!o) setPickerSearch("");
+                }}
+              >
                 <PopoverTrigger asChild>
                   <Button
                     type="button"
@@ -236,10 +272,14 @@ function NotificationsPage() {
                   className="w-[var(--radix-popover-trigger-width)] p-0"
                   align="start"
                 >
-                  <Command>
-                    <CommandInput placeholder="Search students…" />
+                  {/* shouldFilter off: the server already filtered by the search text. */}
+                  <Command shouldFilter={false}>
+                    <CommandInput
+                      placeholder="Search students by name or email…"
+                      value={pickerSearch}
+                      onValueChange={setPickerSearch}
+                    />
                     <CommandList>
-                      <CommandEmpty>No students found.</CommandEmpty>
                       <CommandGroup>
                         <CommandItem
                           value="__all__ all students"
@@ -272,6 +312,19 @@ function NotificationsPage() {
                           </CommandItem>
                         ))}
                       </CommandGroup>
+                      <div className="px-3 py-2 text-xs text-muted-foreground">
+                        {studentsQuery.isFetching
+                          ? "Searching…"
+                          : studentsQuery.isError
+                            ? "Couldn't load students"
+                            : students.length === 0
+                              ? studentSearch
+                                ? "No students match"
+                                : "No students yet"
+                              : students.length >= PICKER_LIMIT
+                                ? `Showing the first ${PICKER_LIMIT}. Type to narrow down.`
+                                : null}
+                      </div>
                     </CommandList>
                   </Command>
                 </PopoverContent>
@@ -310,7 +363,7 @@ function NotificationsPage() {
             <div className="p-6">
               <EmptyState
                 icon={BellRing}
-                title={search ? `No notifications match "${search}"` : "Nothing sent yet"}
+                title={sentSearch ? `No notifications match "${sentSearch}"` : "Nothing sent yet"}
               />
             </div>
           ) : (
@@ -338,7 +391,7 @@ function NotificationsPage() {
                         <TableCell className="max-w-[360px]">
                           <div className="flex items-center gap-2">
                             <span className="font-medium">{n.title}</span>
-                            {n.link === EXAM_ALERTS_PATH && (
+                            {n.source === "exam_alert" && (
                               <StatusBadge tone="neutral" dot={false}>
                                 From exam alert
                               </StatusBadge>
@@ -350,10 +403,12 @@ function NotificationsPage() {
                           <StatusBadge tone={type.tone}>{type.label}</StatusBadge>
                         </TableCell>
                         <TableCell className="whitespace-nowrap">
-                          {n.user ? (
+                          {n.audience === "all" ? (
+                            <span className="text-muted-foreground">All students</span>
+                          ) : n.user ? (
                             studentLabel(n.user)
                           ) : (
-                            <span className="text-muted-foreground">All students</span>
+                            <span className="italic text-muted-foreground">Deleted student</span>
                           )}
                         </TableCell>
                         <TableCell className="whitespace-nowrap text-muted-foreground">
@@ -363,7 +418,7 @@ function NotificationsPage() {
                           })}
                         </TableCell>
                         <TableCell className="whitespace-nowrap text-right tabular-nums text-muted-foreground">
-                          {n.user ? "—" : `Read by ${n.readCount ?? 0}`}
+                          {n.audience === "all" ? `Read by ${n.readCount ?? 0}` : "—"}
                         </TableCell>
                         <TableCell>
                           <DropdownMenu>

@@ -1,6 +1,6 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +18,6 @@ import {
   Edit3,
   ExternalLink,
   IdCard,
-  Lightbulb,
   Megaphone,
   RotateCcw,
   Sparkles,
@@ -27,17 +26,17 @@ import {
 import { unwrapList } from "@/lib/api-unwrap";
 import {
   ALERT_TYPE_META,
-  alertStats,
+  alertListParams,
   alertStatus,
-  daysUntilLabel,
-  filterAlerts,
   formatAlertDate,
-  upcomingSoon,
+  localYmd,
+  withAlertCategories,
   type AlertFilters,
   type AlertType,
   type ExamAlert,
 } from "@/lib/exam-alerts";
 import { isExternalLink } from "@/lib/notifications";
+import { AppLink } from "@/components/site/AppLink";
 import * as examAlertService from "@/services/examAlertService";
 import * as categoryService from "@/services/categoryService";
 
@@ -74,17 +73,46 @@ function AlertsPage() {
   const [filters, setFilters] = useState<SideFilters>(EMPTY_FILTERS);
   const [page, setPage] = useState(1);
 
+  // The viewer's local day: "upcoming"/"past" and the header counts are relative to it.
+  const today = localYmd(new Date());
+
+  // One page at a time, filtered on the server. Null params = tab and type disagree.
+  const params = alertListParams({ tab, ...filters }, today);
   const alertsQuery = useQuery({
-    queryKey: ["exam-alerts"],
-    queryFn: () => examAlertService.getExamAlerts(),
+    queryKey: ["exam-alerts", "list", params, page],
+    queryFn: () => examAlertService.getExamAlerts({ ...params, page, limit: PAGE_SIZE }),
+    enabled: params !== null,
+    placeholderData: keepPreviousData,
   });
-  const alerts = unwrapList<ExamAlert>(alertsQuery.data);
+  const pageRows = params === null ? [] : unwrapList<ExamAlert>(alertsQuery.data);
+  const total = params === null ? 0 : (alertsQuery.data?.total ?? 0);
+  const totalPages = params === null ? 1 : (alertsQuery.data?.totalPages ?? 1);
+  const listLoaded = params === null || alertsQuery.isSuccess;
+  // Alerts archived while viewing the last page can leave us past the end: step back.
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  const summaryQuery = useQuery({
+    queryKey: ["exam-alerts", "summary", today],
+    queryFn: () => examAlertService.getExamAlertSummary(today),
+  });
+  const stats = summaryQuery.data;
 
   const { data: categoriesRes } = useQuery({
     queryKey: ["exam-alerts", "categories"],
     queryFn: () => categoryService.getCategories(),
   });
   const categories = unwrapList<{ _id: string; name: string }>(categoriesRes);
+  // Archived categories still on an alert stay filterable.
+  const categoryOptions = useMemo(
+    () =>
+      withAlertCategories(
+        categories,
+        (stats?.categories ?? []).map((category) => ({ category })),
+      ),
+    [categories, stats],
+  );
 
   const setFilter = <K extends keyof SideFilters>(key: K, value: SideFilters[K]) => {
     setFilters((f) => ({ ...f, [key]: value }));
@@ -95,16 +123,10 @@ function AlertsPage() {
     setPage(1);
   };
 
-  const filtered = useMemo(() => filterAlerts(alerts, { tab, ...filters }), [alerts, tab, filters]);
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const upcoming = useMemo(() => upcomingSoon(alerts, 4), [alerts]);
-  const stats = useMemo(() => alertStats(alerts), [alerts]);
-
   const STATS = [
-    { icon: CalendarDays, value: stats.upcomingExams, label: "Upcoming Exams", tint: "bg-blue-50 text-blue-600" },
-    { icon: Sparkles, value: stats.newThisWeek, label: "New This Week", tint: "bg-emerald-50 text-emerald-600" },
-    { icon: CheckCircle2, value: stats.total, label: "Total Alerts", tint: "bg-violet-50 text-violet-600" },
+    { icon: CalendarDays, value: stats?.upcomingExams, label: "Upcoming Exams", tint: "bg-blue-50 text-blue-600" },
+    { icon: Sparkles, value: stats?.newThisWeek, label: "New This Week", tint: "bg-emerald-50 text-emerald-600" },
+    { icon: CheckCircle2, value: stats?.total, label: "Total Alerts", tint: "bg-violet-50 text-violet-600" },
   ];
 
   return (
@@ -125,7 +147,7 @@ function AlertsPage() {
                 <div className={`h-10 w-10 rounded-lg grid place-items-center ${s.tint}`}><s.icon className="h-5 w-5" /></div>
                 <div>
                   <div className="font-display font-extrabold text-lg leading-none">
-                    {alertsQuery.isLoading ? "–" : s.value}
+                    {s.value ?? "–"}
                   </div>
                   <div className="text-[11px] text-muted-foreground mt-1">{s.label}</div>
                 </div>
@@ -135,7 +157,7 @@ function AlertsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-5">
+      <div>
         <div className="space-y-5">
           <Card className="p-4">
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 items-end">
@@ -144,7 +166,7 @@ function AlertsPage() {
                   <SelectTrigger><SelectValue placeholder="All Categories" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Categories</SelectItem>
-                    {categories.map((c) => <SelectItem key={c._id} value={c._id}>{c.name}</SelectItem>)}
+                    {categoryOptions.map((c) => <SelectItem key={c._id} value={c._id}>{c.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </FilterField>
@@ -224,12 +246,16 @@ function AlertsPage() {
                 </div>
               )}
 
-              {alertsQuery.isSuccess && alerts.length === 0 && (
+              {listLoaded && pageRows.length === 0 && stats?.total === 0 && (
                 <div className="p-12 text-center text-sm text-muted-foreground">No alerts yet — check back soon.</div>
               )}
-              {alertsQuery.isSuccess && alerts.length > 0 && pageRows.length === 0 && (
-                <div className="p-12 text-center text-sm text-muted-foreground">No alerts match these filters.</div>
-              )}
+              {listLoaded &&
+                pageRows.length === 0 &&
+                ((stats !== undefined && stats.total > 0) || summaryQuery.isError) && (
+                  <div className="p-12 text-center text-sm text-muted-foreground">
+                    No alerts match these filters.
+                  </div>
+                )}
 
               {pageRows.map((a) => {
                 const meta = ALERT_TYPE_META[a.type] ?? ALERT_TYPE_META.other;
@@ -260,13 +286,12 @@ function AlertsPage() {
                     </div>
                     {a.link && (
                       <Button asChild size="sm" variant="outline" className="text-primary border-primary/30 hover:bg-primary/5">
-                        {isExternalLink(a.link) ? (
-                          <a href={a.link} target="_blank" rel="noopener noreferrer">
-                            View details <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
-                          </a>
-                        ) : (
-                          <Link to={a.link as never}>View details</Link>
-                        )}
+                        <AppLink href={a.link}>
+                          View details
+                          {isExternalLink(a.link) && (
+                            <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
+                          )}
+                        </AppLink>
                       </Button>
                     )}
                   </motion.div>
@@ -274,10 +299,10 @@ function AlertsPage() {
               })}
             </div>
 
-            {filtered.length > 0 && (
+            {total > 0 && (
               <div className="flex items-center justify-between px-4 py-3 border-t border-border">
                 <span className="text-xs text-muted-foreground">
-                  Showing {(page - 1) * PAGE_SIZE + 1} to {Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length} alerts
+                  Showing {(page - 1) * PAGE_SIZE + 1} to {Math.min(page * PAGE_SIZE, total)} of {total} alerts
                 </span>
                 <div className="flex items-center gap-1">
                   <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
@@ -292,48 +317,6 @@ function AlertsPage() {
                 </div>
               </div>
             )}
-          </Card>
-        </div>
-
-        <div className="space-y-4">
-          <Card className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <span className="font-display font-bold text-sm">Upcoming</span>
-              <Link to="/exams" className="text-xs text-primary hover:underline">View All</Link>
-            </div>
-            <ul className="space-y-3">
-              {upcoming.map((u) => {
-                const d = new Date(u.date);
-                return (
-                  <li key={u._id} className="flex items-center gap-3">
-                    <div className="h-11 w-11 rounded-lg bg-blue-50 grid place-items-center text-center">
-                      <div className="leading-none">
-                        <div className="text-[10px] font-bold text-blue-600 uppercase">{d.toLocaleString("en", { month: "short", timeZone: "UTC" })}</div>
-                        <div className="text-sm font-extrabold text-blue-700">{d.getUTCDate()}</div>
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-xs truncate">{u.title}</div>
-                      <div className="text-[11px] text-muted-foreground">{formatAlertDate(u.date)}</div>
-                    </div>
-                    <Badge className="bg-blue-100 text-blue-700 border-0 hover:bg-blue-100 text-[10px]">{daysUntilLabel(u)}</Badge>
-                  </li>
-                );
-              })}
-              {upcoming.length === 0 && <li className="text-xs text-muted-foreground">Nothing upcoming.</li>}
-            </ul>
-          </Card>
-
-          <Card className="p-4 bg-primary/5 border-primary/20">
-            <div className="flex items-start gap-2">
-              <Lightbulb className="h-5 w-5 text-primary mt-0.5" />
-              <div>
-                <div className="font-display font-bold text-sm">Important Tip</div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Important new alerts also show up in your notification bell at the top of the page, so check it regularly.
-                </p>
-              </div>
-            </div>
           </Card>
         </div>
       </div>

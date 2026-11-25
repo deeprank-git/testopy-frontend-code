@@ -1,9 +1,12 @@
 import { describe, it, expect } from "vitest";
 import {
   badgeText,
+  filterToParams,
   isExternalLink,
   isValidLink,
   markReadInPayload,
+  notificationsSearchSchema,
+  splitInAppLink,
   timeAgo,
   type MyNotificationsPayload,
 } from "./notifications";
@@ -89,5 +92,44 @@ describe("markReadInPayload", () => {
   });
   it("passes undefined through", () => {
     expect(markReadInPayload(undefined, "a")).toBeUndefined();
+  });
+});
+
+describe("splitInAppLink", () => {
+  it("keeps the query string and hash of an in-app path", () => {
+    expect(splitInAppLink("/x?y=1&z=a%20b#h")).toEqual({
+      to: "/x",
+      search: { y: "1", z: "a b" },
+      hash: "h",
+    });
+  });
+  it("handles a bare path", () => {
+    expect(splitInAppLink("/dashboard/exam-alerts")).toEqual({
+      to: "/dashboard/exam-alerts",
+      search: {},
+      hash: undefined,
+    });
+  });
+});
+
+describe("filterToParams", () => {
+  it("maps chips to API params", () => {
+    expect(filterToParams("all", false)).toEqual({});
+    expect(filterToParams("result", false)).toEqual({ type: "result" });
+    expect(filterToParams("exam_alert", true)).toEqual({ source: "exam_alert", unread: 1 });
+  });
+});
+
+describe("notificationsSearchSchema", () => {
+  it("accepts known values and drops unknown ones", () => {
+    expect(notificationsSearchSchema.parse({ filter: "offer", unread: true })).toEqual({
+      filter: "offer",
+      unread: true,
+    });
+    expect(notificationsSearchSchema.parse({ filter: "bogus", unread: "yes" })).toEqual({
+      filter: undefined,
+      unread: undefined,
+    });
+    expect(notificationsSearchSchema.parse({})).toEqual({});
   });
 });

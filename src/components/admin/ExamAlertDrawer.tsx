@@ -19,6 +19,7 @@ import {
   ALERT_TYPES,
   ALERT_TYPE_META,
   alertDay,
+  withAlertCategories,
   type AlertType,
   type ExamAlert,
 } from "@/lib/exam-alerts";
@@ -83,10 +84,7 @@ export function ExamAlertDrawer({
   }, [open, alert]);
 
   // Keep an alert's current category selectable even if it is archived.
-  const categoryOptions =
-    alert?.category && !categories.some((c) => c._id === alert.category!._id)
-      ? [...categories, alert.category]
-      : categories;
+  const categoryOptions = withAlertCategories(categories, alert ? [alert] : []);
 
   const set = <K extends keyof Form>(key: K, value: Form[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
@@ -113,16 +111,20 @@ export function ExamAlertDrawer({
         link: form.link.trim(),
       };
       if (isEdit) {
-        await examAlertService.adminUpdateExamAlert(alert!._id, payload);
-        return { notified: false };
+        return examAlertService.adminUpdateExamAlert(alert!._id, {
+          ...payload,
+          notify: form.notify,
+        });
       }
       return examAlertService.adminCreateExamAlert({ ...payload, notify: form.notify });
     },
     onSuccess: (res) => {
-      if (isEdit) toast.success("Alert updated");
-      else if (!form.notify) toast.success("Alert created");
-      else if (res.notified) toast.success("Alert created and students notified");
-      else toast.warning("Alert created, but the notification could not be sent");
+      const verb = isEdit ? "updated" : "created";
+      // An archived alert is never announced, so there is nothing to warn about.
+      const canNotify = !isEdit || alert!.isActive !== false;
+      if (!form.notify || !canNotify) toast.success(`Alert ${verb}`);
+      else if (res.notified) toast.success(`Alert ${verb} and students notified`);
+      else toast.warning(`Alert ${verb}, but the notification could not be sent`);
       qc.invalidateQueries({ queryKey: ["admin", "exam-alerts"] });
       qc.invalidateQueries({ queryKey: ["exam-alerts"] });
       qc.invalidateQueries({ queryKey: ["admin", "notifications"] });
@@ -234,7 +236,8 @@ export function ExamAlertDrawer({
         <FieldError>{show(errors.link)}</FieldError>
       </div>
 
-      {!isEdit && (
+      {/* Archived alerts are hidden from students, so there is nothing to announce. */}
+      {(!isEdit || alert!.isActive !== false) && (
         <div className="flex items-start gap-3 rounded-lg border border-border p-3">
           <Checkbox
             id="ea-notify"
@@ -242,9 +245,13 @@ export function ExamAlertDrawer({
             onCheckedChange={(v) => set("notify", v === true)}
           />
           <div className="space-y-1">
-            <Label htmlFor="ea-notify">Also notify all students</Label>
+            <Label htmlFor="ea-notify">
+              {isEdit ? "Notify students of this change" : "Also notify all students"}
+            </Label>
             <p className="text-xs text-muted-foreground">
-              Sends a bell notification linking to Exam Alerts.
+              {isEdit
+                ? 'Sends an "Updated: …" bell notification linking to Exam Alerts.'
+                : "Sends a bell notification linking to Exam Alerts."}
             </p>
           </div>
         </div>
