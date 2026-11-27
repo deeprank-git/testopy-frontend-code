@@ -12,7 +12,14 @@ import { FieldError, FieldGroup, FormDrawer } from "@/components/admin/FormDrawe
 import { ImageField } from "@/components/admin/ImageField";
 import { apiError } from "@/lib/admin/ui-helpers";
 import * as testSeriesService from "@/services/testSeriesService";
-import type { ImportantDates } from "@/services/testSeriesService";
+import {
+  type DateRow,
+  emptyDateRow,
+  fromDateRows,
+  IMPORTANT_DATE_TEXT_MAX,
+  toDateRows,
+  validateDateRows,
+} from "@/lib/important-dates";
 
 export type Series = {
   _id: string;
@@ -33,8 +40,6 @@ export type Series = {
   totalTests?: number;
 };
 
-type DateRow = { label: string; from: string; to: string };
-
 type FormState = {
   name: string;
   description: string;
@@ -48,9 +53,6 @@ type FormState = {
   dates: DateRow[];
 };
 
-const isRange = (v: unknown): v is { from: string; to: string } =>
-  !!v && typeof v === "object" && "from" in v && "to" in v;
-
 function toForm(s?: Series): FormState {
   return {
     name: s?.name ?? "",
@@ -62,24 +64,9 @@ function toForm(s?: Series): FormState {
     negativeMarksPerQuestion: s?.negativeMarksPerQuestion ?? 0,
     officialWebsite: s?.officialWebsite ?? "",
     applyLink: s?.applyLink ?? "",
-    // Legacy free-text values (not {from,to}) are dropped; the backend rejects them anyway.
-    dates: Object.entries(s?.importantDates ?? {})
-      .filter(([, v]) => isRange(v))
-      .map(([label, v]) => ({ label, ...(v as { from: string; to: string }) })),
+    // Every entry is kept (dates, text, or both) so saving never drops any.
+    dates: toDateRows(s?.importantDates),
   };
-}
-
-function validateDates(rows: DateRow[]): string | null {
-  const seen = new Set<string>();
-  for (const [i, r] of rows.entries()) {
-    if (!r.label.trim()) return `Date ${i + 1}: label is required`;
-    if (!r.from || !r.to)
-      return `"${r.label}": pick both dates (use the same day twice for one day)`;
-    if (r.from > r.to) return `"${r.label}": start date is after end date`;
-    if (seen.has(r.label.trim())) return `"${r.label}" is listed twice`;
-    seen.add(r.label.trim());
-  }
-  return null;
 }
 
 export function SeriesDrawer({
@@ -120,9 +107,7 @@ export function SeriesDrawer({
 
   const save = useMutation({
     mutationFn: () => {
-      const importantDates: ImportantDates = Object.fromEntries(
-        form.dates.map((d) => [d.label.trim(), { from: d.from, to: d.to }]),
-      );
+      const importantDates = fromDateRows(form.dates);
       const input = {
         name: form.name.trim(),
         description: form.description.trim(),
@@ -156,7 +141,7 @@ export function SeriesDrawer({
 
   const submit = () => {
     if (!form.name.trim()) return;
-    const err = validateDates(form.dates);
+    const err = validateDateRows(form.dates);
     setDateError(err);
     if (!err) save.mutate();
   };
@@ -333,7 +318,8 @@ export function SeriesDrawer({
           <Label>Important dates</Label>
           {form.dates.length === 0 && (
             <p className="text-sm text-muted-foreground">
-              e.g. Application window, Admit card, Exam date.
+              e.g. Application window, Admit card, Exam date. Pick dates, add text (&quot;December
+              2026&quot;, &quot;TBA&quot;), or both.
             </p>
           )}
           {form.dates.map((d, i) => (
@@ -362,6 +348,15 @@ export function SeriesDrawer({
                     onChange={(e) => updateDate(i, { to: e.target.value })}
                   />
                 </div>
+                <Input
+                  aria-label="Date text"
+                  value={d.text}
+                  maxLength={IMPORTANT_DATE_TEXT_MAX}
+                  onChange={(e) => updateDate(i, { text: e.target.value })}
+                  placeholder={
+                    d.from ? "Note (optional), e.g. Extended" : "Or text, e.g. December 2026 / TBA"
+                  }
+                />
               </div>
               <Button
                 type="button"
@@ -384,7 +379,7 @@ export function SeriesDrawer({
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => set("dates", [...form.dates, { label: "", from: "", to: "" }])}
+            onClick={() => set("dates", [...form.dates, emptyDateRow()])}
           >
             <Plus className="size-4" /> Add date
           </Button>

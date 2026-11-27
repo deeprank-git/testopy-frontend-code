@@ -18,7 +18,12 @@ import * as testSeriesService from "@/services/testSeriesService";
 import * as testService from "@/services/testService";
 import { unwrapItem, unwrapList } from "@/lib/api-unwrap";
 import { cn } from "@/lib/utils";
-import { formatImportantDate, IMPORTANT_DATE_TINTS, ImportantDateIcon } from "@/lib/important-dates";
+import {
+  formatImportantDateEntry,
+  IMPORTANT_DATE_TINTS,
+  ImportantDateIcon,
+  type ImportantDates,
+} from "@/lib/important-dates";
 import { isPublishedVisible } from "@/lib/publish";
 
 type SeriesApiData = {
@@ -28,7 +33,7 @@ type SeriesApiData = {
   officialWebsite?: string;
   applyLink?: string;
   notificationPdf?: string;
-  importantDates?: Record<string, { from: string; to: string }>;
+  importantDates?: ImportantDates;
   isPublished?: boolean;
   isActive?: boolean;
   category?: { _id?: string } | string;
@@ -168,15 +173,12 @@ function TestSeriesDetailPage() {
   const notificationPdfUrl = series?.notificationPdf
     ? mediaService.resolveMediaUrl(series.notificationPdf)
     : undefined;
-  const importantDates = Object.entries(series?.importantDates ?? {}).map(([label, v], i) => {
-    let date = "—";
-    if (v?.from) {
-      date = v.to && v.to !== v.from
-        ? `${formatImportantDate(v.from)} - ${formatImportantDate(v.to)}`
-        : formatImportantDate(v.from);
-    }
-    return { label, date, tint: IMPORTANT_DATE_TINTS[i % IMPORTANT_DATE_TINTS.length] };
-  });
+  // Exact dates, free text ("December 2026", "TBA"), or both — see lib/important-dates.ts.
+  const importantDates = Object.entries(series?.importantDates ?? {}).map(([label, v], i) => ({
+    label,
+    date: formatImportantDateEntry(v),
+    tint: IMPORTANT_DATE_TINTS[i % IMPORTANT_DATE_TINTS.length],
+  }));
 
   const startTest = (testId: string) => navigate({ to: "/test/$testId/instructions", params: { testId } });
 
@@ -311,7 +313,7 @@ function TestSeriesDetailPage() {
                         <ImportantDateIcon className="h-5 w-5" />
                       </div>
                       <div className="text-xs font-semibold mt-2.5 truncate" title={d.label}>{d.label}</div>
-                      <div className="text-[11px] text-muted-foreground mt-0.5">{d.date}</div>
+                      <div className="text-[11px] text-muted-foreground mt-0.5 break-words">{d.date}</div>
                     </div>
                   ))}
                 </div>

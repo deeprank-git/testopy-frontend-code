@@ -49,7 +49,7 @@ Most controllers return:
 4. `Category`, `TestSeries`, and `CurrentAffairs` admin create/update all now take real file uploads, but each under a **different field name** — Category uses `categoryImage`, TestSeries uses `image` (plus `notificationPdf`), CurrentAffairs uses `currentAffairsImage`. Don't reuse the same upload field-name config across these.
 5. A test attempt can silently flip to `status: "auto-submitted"` in the background (cron sweep every 60s past `expiresAt`) without the frontend calling submit — treat `auto-submitted` identically to `completed` everywhere in the UI (results, leaderboard, attempt history).
 6. `submitTest` has no explicit 400 for a missing `attemptId` — it resolves to the generic 404 `"Attempt not found"`.
-7. `importantDates` validation (`{from,to}` date-range shape) is enforced on `POST /api/admin/test-series` but **not** on `PATCH /api/admin/test-series/:id` — the same malformed input is rejected with 400 on create but can be silently written on update.
+7. `importantDates` is validated identically on `POST` and `PATCH /api/admin/test-series` (each entry: exact `{from,to}`, `{text}`, or both) — malformed input is a 400 on either.
 8. `Test.duration` is **never accepted from the client** on `POST`/`PATCH /api/admin/tests` — it's always recomputed server-side as the sum of `sections[].duration`. A client that sends `duration` directly (matching the field's presence in the schema) will have it silently ignored; omitting `sections` entirely on create fails with a validation error since `sections` must have at least one entry.
 9. `Test` has **no `category` field at all** — a test's category is only reachable indirectly via `test.testSeries.category`. Sending `category` in a Test create/update body is silently dropped (Mongoose strict mode). `GET /api/tests?category=` still works, but internally resolves to "all tests whose `testSeries` belongs to that category" — see the Tests section.
 10. `Question.section` is a **required** field referencing a specific entry inside `Test.sections[]` (by that subdocument's own `_id`, not a separate collection) — it is not a Mongoose `ref`, so it's validated manually in the controller against the parent Test's `sections` array. Creating a question without a valid `section` fails with a 400, not a schema-level 500.
@@ -272,11 +272,15 @@ No query filters supported. Only active categories returned, trimmed to `{ _id, 
 ### POST `/api/admin/test-series`
 **Form fields**: `name` (required), `category` (ObjectId, required), `description`, `officialWebsite` (string, optional), `applyLink` (string, optional), `isActive`, `isPublished`, `isPaid` (boolean), `price` (number), `negativeMarking` (boolean), `negativeMarksPerQuestion` (number), `marksPerQuestion` (number), `importantDates` (optional), `image` (file), `notificationPdf` (file).
 
-`importantDates` ⚠️ must be a **JSON-stringified object** sent as a form-data text field (not raw JSON), where every value is an exact date range — free text like `"July 2025"` is rejected:
+`importantDates` ⚠️ must be a **JSON-stringified object** sent as a form-data text field (not raw JSON). Each entry has exact dates, free text, or both:
 ```json
-{ "Application Start": { "from": "2026-08-01", "to": "2026-08-01" }, "Application End": { "from": "2026-08-01", "to": "2026-08-20" } }
+{
+  "Application Window": { "from": "2026-08-01", "to": "2026-08-20" },
+  "Tier 2 Exam": { "text": "December 2026" },
+  "Last Date": { "from": "2026-08-26", "to": "2026-08-26", "text": "Extended" }
+}
 ```
-Each entry must be `{ from: "YYYY-MM-DD", to: "YYYY-MM-DD" }` with `from <= to`, or the request fails with **400** `{ "success": false, "message": "Invalid importantDates: \"<label>\" must be { from: \"YYYY-MM-DD\", to: \"YYYY-MM-DD\" } with from <= to" }`.
+Rules (backend `utils/importantDates.js`): `from`/`to` come as a pair of real `"YYYY-MM-DD"` days with `from <= to` (one day: `from === to`); `text` is a string of at most 120 characters, trimmed (empty text is dropped); each entry needs dates, text, or both; no other fields; labels are trimmed and must be unique. A bare string value (e.g. `"July 2025"`) is rejected — use `{ "text": "July 2025" }`. Failures are **400** `{ "success": false, "message": "Invalid importantDates: \"<label>\" <reason>" }`.
 
 **Success — 201**: `{ "success": true, "message": "Test Series created", "data": { ...series, "image": "/uploads/testseries_image/<file>", "notificationPdf": "/uploads/notificationPDF/<file>" } }`
 
@@ -285,7 +289,7 @@ Each entry must be `{ from: "YYYY-MM-DD", to: "YYYY-MM-DD" }` with `from <= to`,
 - 500 `{ "success": false, "message": "Error creating test series", "error": "..." }` (missing required fields, etc.)
 
 ### PATCH `/api/admin/test-series/:id`
-Same fields as create, all optional; sending a new `image` and/or `notificationPdf` file replaces and deletes the old one(s) on disk independently. Unlike create, `importantDates` here is **not** validated for the `{from,to}` shape — malformed JSON just throws and surfaces as a generic 500, and a syntactically-valid-but-wrong-shaped object is accepted as-is. Renaming `name` here also regenerates `slug`.
+Same fields as create, all optional; sending a new `image` and/or `notificationPdf` file replaces and deletes the old one(s) on disk independently. `importantDates` follows the same rules as create (400 `Invalid importantDates: ...` on bad JSON or shape) and replaces the whole object. Renaming `name` here also regenerates `slug`.
 **Success — 200**: `{ "success": true, "message": "Test Series updated", "data": { ...series... } }`
 **Errors**: 404 `{ "success": false, "message": "Test Series not found" }`
 

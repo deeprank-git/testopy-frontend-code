@@ -1,4 +1,5 @@
 import axiosClient from "@/api/axiosClient";
+import type { ImportantDates } from "@/lib/important-dates";
 
 export async function getTestSeries(params?: {
   category?: string;
@@ -14,7 +15,8 @@ export async function getTestSeriesById(id: string) {
   return res.data;
 }
 
-export type ImportantDates = Record<string, { from: string; to: string }>;
+// Entries are exact { from, to }, { text }, or both — see lib/important-dates.ts.
+export type { ImportantDates };
 
 export type TestSeriesInput = {
   name: string;
