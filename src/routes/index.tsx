@@ -26,6 +26,7 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { SiteShell } from "@/components/site/SiteShell";
 import { ExamIcon } from "@/components/site/ExamIcon";
+import { categoriesWithSeries } from "@/lib/categories";
 import { ArticleImage } from "@/components/site/ArticleImage";
 import { toast } from "sonner";
 import heroImg from "@/assets/hero-student.png";
@@ -93,11 +94,11 @@ function HomePage() {
     queryKey: ["home-categories"],
     queryFn: () => categoryService.getCategories(),
   });
-  const categories = [...unwrapList<any>(categoriesRes)].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  const allCategories = [...unwrapList<any>(categoriesRes)].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   // The backend already excludes inactive categories from this endpoint, so
   // membership in this set is also how unpublished categories cascade to
   // hide their test series below, with no extra category-level flag needed.
-  const activeCategoryIds = new Set(categories.map((c) => c._id));
+  const activeCategoryIds = new Set(allCategories.map((c) => c._id));
 
   const { data: seriesRes } = useQuery({
     queryKey: ["home-series"],
@@ -106,6 +107,8 @@ function HomePage() {
   const series = unwrapList<any>(seriesRes)
     .filter((s) => isPublishedVisible(s) && activeCategoryIds.has(s.category?._id ?? s.category))
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  // Only categories with at least one published exam get a tab.
+  const categories = categoriesWithSeries(allCategories, series);
 
   const resolvedCat = activeCat ?? categories[0]?._id ?? null;
 

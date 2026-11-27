@@ -15,6 +15,7 @@ import * as mediaService from "@/services/mediaService";
 import { unwrapList } from "@/lib/api-unwrap";
 import { cn } from "@/lib/utils";
 import { isPublishedVisible } from "@/lib/publish";
+import { categoriesWithSeries } from "@/lib/categories";
 
 export const Route = createFileRoute("/exams")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -42,14 +43,14 @@ function ExamsPage() {
     queryKey: ["exams-categories"],
     queryFn: () => categoryService.getCategories(),
   });
-  const categories = useMemo(
+  const allCategories = useMemo(
     () => [...unwrapList<any>(categoriesRes)].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
     [categoriesRes],
   );
   // The backend already excludes inactive categories from this endpoint, so
   // membership in this set is also how unpublished categories cascade to
   // hide their test series/tests below, with no extra category-level flag needed.
-  const activeCategoryIds = useMemo(() => new Set(categories.map((c) => c._id)), [categories]);
+  const activeCategoryIds = useMemo(() => new Set(allCategories.map((c) => c._id)), [allCategories]);
 
   const { data: seriesRes, isLoading: loadingSeries } = useQuery({
     queryKey: ["exams-series"],
@@ -63,6 +64,8 @@ function ExamsPage() {
         .sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
     [allSeries, activeCategoryIds],
   );
+  // Only categories with at least one published exam are listed.
+  const categories = useMemo(() => categoriesWithSeries(allCategories, series), [allCategories, series]);
 
   const { data: testsRes, isLoading: loadingTests } = useQuery({
     queryKey: ["exams-tests"],
