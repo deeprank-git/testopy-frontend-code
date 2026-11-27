@@ -25,6 +25,7 @@ import {
   type ImportantDates,
 } from "@/lib/important-dates";
 import { isPublishedVisible } from "@/lib/publish";
+import { examPageLinks } from "@/lib/exam-links";
 
 type SeriesApiData = {
   name: string;
@@ -145,7 +146,7 @@ function TestSeriesDetailPage() {
   const displayName = series?.name ?? name ?? "Test Series";
   const rawImage = series?.image ?? image;
   const logoUrl = rawImage ? mediaService.resolveMediaUrl(rawImage) : undefined;
-  const displayDescription = series?.description ?? description;
+  const displayDescription = (series?.description ?? description ?? "").trim();
 
   // Measures actual overflow rather than guessing from character count,
   // since line count depends on container width/font, not text length.
@@ -173,6 +174,9 @@ function TestSeriesDetailPage() {
   const notificationPdfUrl = series?.notificationPdf
     ? mediaService.resolveMediaUrl(series.notificationPdf)
     : undefined;
+  // Only links the exam actually has — buttons for missing ones are hidden.
+  const links = examPageLinks(series, notificationPdfUrl);
+  const quickLinks = QUICK_LINKS_CONFIG.filter(({ key }) => links[key]);
   // Exact dates, free text ("December 2026", "TBA"), or both — see lib/important-dates.ts.
   const importantDates = Object.entries(series?.importantDates ?? {}).map(([label, v], i) => ({
     label,
@@ -258,20 +262,16 @@ function TestSeriesDetailPage() {
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h1 className="text-xl md:text-2xl font-display font-extrabold text-gradient-primary">{displayName}</h1>
-                    <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-transparent">
-                      Graduate Level
-                    </Badge>
-                  </div>
-                  <p
-                    ref={descriptionRef}
-                    className={cn("text-sm text-muted-foreground mt-1.5", !descriptionExpanded && "line-clamp-2")}
-                  >
-                    {displayDescription ??
-                      "Staff Selection Commission Combined Graduate Level Examination is conducted to recruit candidates for various Group B and Group C posts."}
-                  </p>
-                  {isDescriptionLong && (
+                  <h1 className="text-xl md:text-2xl font-display font-extrabold text-gradient-primary">{displayName}</h1>
+                  {displayDescription && (
+                    <p
+                      ref={descriptionRef}
+                      className={cn("text-sm text-muted-foreground mt-1.5", !descriptionExpanded && "line-clamp-2")}
+                    >
+                      {displayDescription}
+                    </p>
+                  )}
+                  {displayDescription && isDescriptionLong && (
                     <button
                       type="button"
                       onClick={() => setDescriptionExpanded((v) => !v)}
@@ -282,18 +282,24 @@ function TestSeriesDetailPage() {
                   )}
                 </div>
               </div>
-              <div className="flex flex-col gap-2 w-full sm:w-auto sm:shrink-0">
-                <Button asChild>
-                  <a href={series?.applyLink ?? "#"} target="_blank" rel="noopener noreferrer">
-                    Apply Online <ExternalLink className="h-4 w-4 ml-1.5" />
-                  </a>
-                </Button>
-                <Button variant="outline" asChild>
-                  <a href={notificationPdfUrl ?? "#"} target="_blank" rel="noopener noreferrer">
-                    <Download className="h-4 w-4 mr-1.5" /> Download Notification
-                  </a>
-                </Button>
-              </div>
+              {(links.applyLink || links.notificationPdf) && (
+                <div className="flex flex-col gap-2 w-full sm:w-auto sm:shrink-0">
+                  {links.applyLink && (
+                    <Button asChild>
+                      <a href={links.applyLink} target="_blank" rel="noopener noreferrer">
+                        Apply Online <ExternalLink className="h-4 w-4 ml-1.5" />
+                      </a>
+                    </Button>
+                  )}
+                  {links.notificationPdf && (
+                    <Button variant="outline" asChild>
+                      <a href={links.notificationPdf} target="_blank" rel="noopener noreferrer">
+                        <Download className="h-4 w-4 mr-1.5" /> Download Notification
+                      </a>
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
           </Card>
 
@@ -313,7 +319,7 @@ function TestSeriesDetailPage() {
                         <ImportantDateIcon className="h-5 w-5" />
                       </div>
                       <div className="text-xs font-semibold mt-2.5 truncate" title={d.label}>{d.label}</div>
-                      <div className="text-[11px] text-muted-foreground mt-0.5 break-words">{d.date}</div>
+                      <div className="text-[11px] text-muted-foreground mt-0.5 wrap-break-word">{d.date}</div>
                     </div>
                   ))}
                 </div>
@@ -330,16 +336,18 @@ function TestSeriesDetailPage() {
                     Get complete information about eligibility, exam pattern and syllabus.
                   </p>
                 </div>
-                {/* Same dummy info sheet for every exam until real per-series documents exist */}
-                <Button size="lg" className="h-auto py-2.5 px-5" asChild>
-                  <a href={notificationPdfUrl ?? "#"} target="_blank" rel="noopener noreferrer">
-                    <Download className="h-5 w-5 mr-2 shrink-0" />
-                    <span className="text-left leading-tight">
-                      <span className="block text-sm font-semibold">Download All Details</span>
-                      <span className="block text-[11px] font-normal opacity-90">PDF (Complete Guide)</span>
-                    </span>
-                  </a>
-                </Button>
+                {/* The exam's notification PDF, when one has been uploaded */}
+                {links.notificationPdf && (
+                  <Button size="lg" className="h-auto py-2.5 px-5" asChild>
+                    <a href={links.notificationPdf} target="_blank" rel="noopener noreferrer">
+                      <Download className="h-5 w-5 mr-2 shrink-0" />
+                      <span className="text-left leading-tight">
+                        <span className="block text-sm font-semibold">Download All Details</span>
+                        <span className="block text-[11px] font-normal opacity-90">PDF (Complete Guide)</span>
+                      </span>
+                    </a>
+                  </Button>
+                )}
               </div>
 
               <div className="space-y-3">
@@ -460,19 +468,17 @@ function TestSeriesDetailPage() {
 
         {/* Right panel */}
         <aside className="space-y-4">
+          {quickLinks.length > 0 && (
           <Card className="p-4">
             <h3 className="font-display font-bold text-sm mb-3">Quick Links</h3>
             <ul className="space-y-1">
-              {QUICK_LINKS_CONFIG.map(({ label, icon: Icon, key }) => {
-                // notificationPdfUrl is already resolved; officialWebsite/applyLink are external URLs
-                const href = key === "notificationPdf"
-                  ? (notificationPdfUrl ?? "#")
-                  : (series?.[key] ?? "#");
+              {quickLinks.map(({ label, icon: Icon, key }) => {
+                const href = links[key];
                 return (
                   <li key={label}>
                     <a
                       href={href}
-                      target={href !== "#" ? "_blank" : undefined}
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center justify-between rounded-md px-2 py-2 text-sm hover:bg-muted transition-colors"
                     >
@@ -487,6 +493,7 @@ function TestSeriesDetailPage() {
               })}
             </ul>
           </Card>
+          )}
 
           <Card className="p-4">
             <h3 className="font-display font-bold text-sm mb-3">Recommended Mock Tests</h3>
