@@ -14,6 +14,7 @@ import * as mediaService from "@/services/mediaService";
 import { unwrapList } from "@/lib/api-unwrap";
 import { cn } from "@/lib/utils";
 import { isPublishedVisible } from "@/lib/publish";
+import { categoriesWithSeries, seriesWithTests, testSeriesIdOf } from "@/lib/categories";
 
 export const Route = createFileRoute("/_authenticated/dashboard/mock-tests")({
   component: MockTests,
@@ -29,21 +30,11 @@ function MockTests() {
     queryKey: ["mt-categories"],
     queryFn: () => categoryService.getCategories(),
   });
-  const categories = unwrapList<any>(categoriesRes);
+  const allCategories = unwrapList<any>(categoriesRes);
   // The backend already excludes inactive categories from this endpoint, so
   // membership in this set is also how unpublished categories cascade to
   // hide their test series/tests below, with no extra category-level flag needed.
-  const activeCategoryIds = useMemo(() => new Set(categories.map((c) => c._id)), [categories]);
-  // Default to the first category once loaded, same as the Overview page —
-  // there's no "All" option here either.
-  const resolvedCategory = activeCategory ?? categories[0]?._id ?? null;
-  const activeCategoryName = categories.find((c) => c._id === resolvedCategory)?.name ?? "";
-
-  const filteredCategories = useMemo(() => {
-    if (!catSearch.trim()) return categories;
-    const q = catSearch.trim().toLowerCase();
-    return categories.filter((c) => String(c.name ?? "").toLowerCase().includes(q));
-  }, [categories, catSearch]);
+  const activeCategoryIds = useMemo(() => new Set(allCategories.map((c) => c._id)), [allCategories]);
 
   const { data: seriesRes, isLoading: loadingSeries } = useQuery({
     queryKey: ["mt-series"],
@@ -53,10 +44,6 @@ function MockTests() {
   const series = useMemo(
     () => allSeries.filter((s) => isPublishedVisible(s) && activeCategoryIds.has(s.category?._id ?? s.category)),
     [allSeries, activeCategoryIds],
-  );
-  const seriesInCategory = useMemo(
-    () => series.filter((s) => (s.category?._id ?? s.category) === resolvedCategory),
-    [series, resolvedCategory],
   );
   const activeSeries = series.find((s) => s._id === activeSeriesId) ?? null;
   const seriesLogoUrl = activeSeries?.image ? mediaService.resolveMediaUrl(activeSeries.image) : undefined;
@@ -69,9 +56,41 @@ function MockTests() {
   });
   const allTests = unwrapList<any>(testsRes);
   const tests = useMemo(
-    () => allTests.filter((t) => isPublishedVisible(t) && visibleSeriesIds.has(typeof t.testSeries === "object" ? t.testSeries?._id : t.testSeries)),
+    () => allTests.filter((t) => isPublishedVisible(t) && visibleSeriesIds.has(testSeriesIdOf(t) ?? "")),
     [allTests, visibleSeriesIds],
   );
+  const mockCountBySeries = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const t of tests) {
+      const id = testSeriesIdOf(t);
+      if (id) counts.set(id, (counts.get(id) ?? 0) + 1);
+    }
+    return counts;
+  }, [tests]);
+
+  // Only exams with at least one mock test, and only categories holding such
+  // an exam — otherwise most tabs lead to "No mock tests available yet".
+  const seriesWithMocks = useMemo(() => seriesWithTests(series, tests), [series, tests]);
+  const categories = useMemo(
+    () => categoriesWithSeries(allCategories, seriesWithMocks),
+    [allCategories, seriesWithMocks],
+  );
+  // Default to the first category once loaded, same as the Overview page —
+  // there's no "All" option here either.
+  const resolvedCategory = activeCategory ?? categories[0]?._id ?? null;
+  const activeCategoryName = categories.find((c) => c._id === resolvedCategory)?.name ?? "";
+
+  const filteredCategories = useMemo(() => {
+    if (!catSearch.trim()) return categories;
+    const q = catSearch.trim().toLowerCase();
+    return categories.filter((c) => String(c.name ?? "").toLowerCase().includes(q));
+  }, [categories, catSearch]);
+
+  const seriesInCategory = useMemo(
+    () => seriesWithMocks.filter((s) => (s.category?._id ?? s.category) === resolvedCategory),
+    [seriesWithMocks, resolvedCategory],
+  );
+  const loadingList = loadingCats || loadingSeries || loadingTests;
 
   const { data: seriesTestsRes, isLoading: loadingSeriesTests } = useQuery({
     queryKey: ["mt-series-tests", activeSeriesId],
@@ -107,7 +126,7 @@ function MockTests() {
         </div>
         <div className="grid grid-cols-2 md:grid-cols-2 gap-3">
           <Stat icon={ClipboardList} value={`${tests.length}`} label="Mock Tests Available" tone="primary" />
-          <Stat icon={Database} value={`${series.length}`} label="Exams" tone="success" />
+          <Stat icon={Database} value={`${seriesWithMocks.length}`} label="Exams" tone="success" />
         </div>
       </div>
 
@@ -124,15 +143,17 @@ function MockTests() {
               className="pl-8 h-8 text-sm"
             />
           </div>
-          {loadingCats ? (
+          {loadingList ? (
             <div className="space-y-1.5">
               {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-9 rounded-md" />)}
             </div>
           ) : filteredCategories.length === 0 ? (
-            <p className="text-xs text-muted-foreground px-1 py-2">No categories match your search.</p>
+            <p className="text-xs text-muted-foreground px-1 py-2">
+              {catSearch.trim() ? "No categories match your search." : "No mock tests available yet."}
+            </p>
           ) : (
             filteredCategories.map((c) => {
-              const count = series.filter((s) => (s.category?._id ?? s.category) === c._id).length;
+              const count = seriesWithMocks.filter((s) => (s.category?._id ?? s.category) === c._id).length;
               const active = resolvedCategory === c._id;
               return (
                 <button
@@ -160,12 +181,12 @@ function MockTests() {
               </h2>
             </div>
 
-            {loadingSeries ? (
+            {loadingList ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}
               </div>
             ) : seriesInCategory.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-8 text-center">No test series available in this category yet.</p>
+              <p className="text-sm text-muted-foreground py-8 text-center">No mock tests available yet.</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {seriesInCategory.map((s) => {
@@ -184,7 +205,7 @@ function MockTests() {
                       <div className="flex-1 min-w-0">
                         <div className="font-medium truncate">{s.name}</div>
                         <div className="text-xs text-muted-foreground truncate">
-                          {tests.filter((t) => (typeof t.testSeries === "object" ? t.testSeries?._id : t.testSeries) === s._id).length} Tests
+                          {mockCountBySeries.get(s._id) ?? 0} Tests
                         </div>
                       </div>
                       <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary shrink-0" />

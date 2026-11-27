@@ -1,5 +1,22 @@
 import { describe, it, expect } from "vitest";
-import { categoriesWithSeries, seriesCategoryId } from "./categories";
+import { categoriesWithSeries, seriesCategoryId, seriesWithTests, testSeriesIdOf } from "./categories";
+
+describe("testSeriesIdOf / seriesWithTests", () => {
+  it("reads populated and bare series refs", () => {
+    expect(testSeriesIdOf({ testSeries: { _id: "s1" } })).toBe("s1");
+    expect(testSeriesIdOf({ testSeries: "s2" })).toBe("s2");
+    expect(testSeriesIdOf({})).toBeUndefined();
+  });
+
+  it("keeps only series that have a visible test, in order", () => {
+    const series = [{ _id: "cgl" }, { _id: "chsl" }, { _id: "mts" }];
+    expect(seriesWithTests(series, [{ testSeries: "mts" }, { testSeries: { _id: "cgl" } }])).toEqual([
+      { _id: "cgl" },
+      { _id: "mts" },
+    ]);
+    expect(seriesWithTests(series, [])).toEqual([]);
+  });
+});
 
 describe("seriesCategoryId", () => {
   it("reads populated and bare category refs", () => {

@@ -23,6 +23,9 @@ import * as testSeriesService from "@/services/testSeriesService";
 import * as categoryService from "@/services/categoryService";
 import * as mediaService from "@/services/mediaService";
 import { unwrapList } from "@/lib/api-unwrap";
+import { isPublishedVisible } from "@/lib/publish";
+import { categoriesWithSeries, seriesWithTests, testSeriesIdOf } from "@/lib/categories";
+import { paginationItems } from "@/lib/pagination";
 
 export const Route = createFileRoute("/_authenticated/dashboard/previous-year-papers")({
   component: PYQPage,
@@ -71,43 +74,71 @@ function PYQPage() {
   const [page, setPage] = useState(1);
   const [pinned, setPinned] = useState<string[]>(() => loadPinned());
 
-  const { data: categoriesRes } = useQuery({
+  const { data: categoriesRes, isLoading: loadingCats } = useQuery({
     queryKey: ["pyq-categories"],
     queryFn: () => categoryService.getCategories(),
   });
-  const categories = unwrapList<any>(categoriesRes).filter((c: any) => c.isActive !== false);
-  // Default to SSC once categories load; falls back to the first real
-  // category if "SSC" isn't present rather than showing nothing.
-  const resolvedCategory = category
-    ?? categories.find((c) => String(c.name).trim().toLowerCase() === "ssc")?._id
-    ?? categories[0]?._id
-    ?? null;
+  const allCategories = useMemo(
+    () => unwrapList<any>(categoriesRes).filter((c: any) => c.isActive !== false),
+    [categoriesRes],
+  );
+  const activeCategoryIds = useMemo(() => new Set(allCategories.map((c) => c._id)), [allCategories]);
 
-  const { data: seriesRes } = useQuery({
+  // Published, active exams in an active category only — same safety net as
+  // every other student page (see lib/publish.ts).
+  const { data: seriesRes, isLoading: loadingSeries } = useQuery({
     queryKey: ["pyq-test-series"],
-    queryFn: () => testSeriesService.getTestSeries(),
+    queryFn: () => testSeriesService.getTestSeries({ isPublished: true, isActive: true }),
   });
-  const allSeries = unwrapList<any>(seriesRes).filter((s: any) => s.isActive !== false);
+  const visibleSeries = useMemo(
+    () =>
+      unwrapList<any>(seriesRes).filter(
+        (s) => isPublishedVisible(s) && activeCategoryIds.has(s.category?._id ?? s.category),
+      ),
+    [seriesRes, activeCategoryIds],
+  );
   const seriesById = useMemo(() => {
     const map = new Map<string, any>();
-    allSeries.forEach((s) => map.set(s._id, s));
+    visibleSeries.forEach((s) => map.set(s._id, s));
     return map;
-  }, [allSeries]);
+  }, [visibleSeries]);
   const seriesNameById = useMemo(() => {
     const map = new Map<string, string>();
-    allSeries.forEach((s) => map.set(s._id, s.name));
+    visibleSeries.forEach((s) => map.set(s._id, s.name));
     return map;
-  }, [allSeries]);
-  const seriesInCategory = useMemo(
-    () => allSeries.filter((s) => (s.category?._id ?? s.category) === resolvedCategory),
-    [allSeries, resolvedCategory],
-  );
+  }, [visibleSeries]);
 
-  const { data: testsRes, isLoading } = useQuery({
+  const { data: testsRes, isLoading: loadingTests } = useQuery({
     queryKey: ["pyq-tests"],
-    queryFn: () => testService.getTests({ paperType: "previous_year" }),
+    queryFn: () => testService.getTests({ paperType: "previous_year", isPublished: true, isActive: true }),
   });
-  const pyqs = unwrapList<any>(testsRes);
+  // Published papers of visible exams only.
+  const pyqs = useMemo(
+    () =>
+      unwrapList<any>(testsRes).filter(
+        (t) => isPublishedVisible(t) && seriesById.has(testSeriesIdOf(t) ?? ""),
+      ),
+    [testsRes, seriesById],
+  );
+  const isLoading = loadingCats || loadingSeries || loadingTests;
+
+  // Only exams that have papers, and only categories holding such an exam.
+  const seriesWithPapers = useMemo(() => seriesWithTests(visibleSeries, pyqs), [visibleSeries, pyqs]);
+  const categories = useMemo(
+    () => categoriesWithSeries(allCategories, seriesWithPapers),
+    [allCategories, seriesWithPapers],
+  );
+  // Default to SSC ("SSC" or "SSC Exams") once loaded; otherwise the first
+  // category that has papers.
+  const resolvedCategory =
+    (category && categories.some((c) => c._id === category) ? category : null) ??
+    categories.find((c) => /^ssc\b/i.test(String(c.name).trim()))?._id ??
+    categories[0]?._id ??
+    null;
+  const seriesInCategory = useMemo(
+    () => seriesWithPapers.filter((s) => (s.category?._id ?? s.category) === resolvedCategory),
+    [seriesWithPapers, resolvedCategory],
+  );
 
   const togglePin = (id: string) => {
     setPinned((prev) => {
@@ -335,7 +366,11 @@ function PYQPage() {
                   );
                 })}
                 {!isLoading && paged.length === 0 && (
-                  <tr><td colSpan={6} className="text-center text-sm text-muted-foreground py-12">No papers match your filters.</td></tr>
+                  <tr>
+                    <td colSpan={6} className="text-center text-sm text-muted-foreground py-12">
+                      {pyqs.length === 0 ? "No previous year papers available yet." : "No papers match your filters."}
+                    </td>
+                  </tr>
                 )}
               </tbody>
             </table>
@@ -446,14 +481,7 @@ function Filter({
 }
 
 function Pagination({ page, total, onChange }: { page: number; total: number; onChange: (p: number) => void }) {
-  const pages: (number | "…")[] = [];
-  if (total <= 7) {
-    for (let i = 1; i <= total; i++) pages.push(i);
-  } else {
-    pages.push(1, 2, 3);
-    if (page > 4) pages.push("…");
-    pages.push(total - 1, total);
-  }
+  const pages = paginationItems(page, total);
   return (
     <div className="flex items-center gap-1">
       <Button variant="outline" size="icon" className="h-8 w-8" disabled={page === 1} onClick={() => onChange(page - 1)}>
