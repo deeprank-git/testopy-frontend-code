@@ -7,7 +7,7 @@ const COLS = [
     title: "Solutions",
     links: [
       { label: "Mock Tests", to: "/exams" },
-      { label: "Previous Year Papers", to: "/exam-info" },
+      { label: "Previous Year Papers", to: "/dashboard/previous-year-papers" },
       { label: "Current Affairs", to: "/current-affairs" },
       { label: "Exam Alerts", to: "/exam-info" },
     ],
