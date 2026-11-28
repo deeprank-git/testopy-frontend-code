@@ -282,6 +282,13 @@ No query filters supported. Only active categories returned, trimmed to `{ _id, 
 ```
 Rules (backend `utils/importantDates.js`): `from`/`to` come as a pair of real `"YYYY-MM-DD"` days with `from <= to` (one day: `from === to`); `text` is a string of at most 120 characters, trimmed (empty text is dropped); each entry needs dates, text, or both; no other fields; labels are trimmed and must be unique. A bare string value (e.g. `"July 2025"`) is rejected — use `{ "text": "July 2025" }`. Failures are **400** `{ "success": false, "message": "Invalid importantDates: \"<label>\" <reason>" }`.
 
+`examDetails` (optional) is also a **JSON-stringified object** form field: the exam page's Eligibility / Exam Pattern / Syllabus as plain text (no HTML; the frontend renders blank-line-separated paragraphs and `- ` lines as bullets):
+```json
+{ "eligibility": "Age: 18-32 years
+- Graduate", "pattern": "Tier 1: 100 questions, 200 marks", "syllabus": "" }
+```
+Rules (backend `utils/examDetails.js`): only the keys `eligibility`, `pattern`, `syllabus`; each a string of at most 20,000 characters (trimmed, line endings normalised); a missing key is stored as `""` (= section hidden). When sent, it replaces all three sections. Failures are **400** `{ "success": false, "message": "Invalid examDetails: <reason>" }`. `GET /api/test-series` omits `examDetails` for non-admins; `GET /api/test-series/:id` and admin lists include it.
+
 **Success — 201**: `{ "success": true, "message": "Test Series created", "data": { ...series, "image": "/uploads/testseries_image/<file>", "notificationPdf": "/uploads/notificationPDF/<file>" } }`
 
 **Errors**

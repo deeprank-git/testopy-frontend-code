@@ -20,6 +20,14 @@ import {
   toDateRows,
   validateDateRows,
 } from "@/lib/important-dates";
+import {
+  EXAM_DETAIL_KEYS,
+  EXAM_DETAIL_MAX,
+  EXAM_DETAIL_META,
+  toExamDetailsForm,
+  type ExamDetailKey,
+  type ExamDetails,
+} from "@/lib/exam-details";
 
 export type Series = {
   _id: string;
@@ -35,6 +43,7 @@ export type Series = {
   applyLink?: string;
   notificationPdf?: string;
   importantDates?: Record<string, unknown>;
+  examDetails?: ExamDetails;
   isPublished?: boolean;
   isActive?: boolean;
   totalTests?: number;
@@ -51,6 +60,7 @@ type FormState = {
   officialWebsite: string;
   applyLink: string;
   dates: DateRow[];
+  examDetails: Record<ExamDetailKey, string>;
 };
 
 function toForm(s?: Series): FormState {
@@ -66,6 +76,7 @@ function toForm(s?: Series): FormState {
     applyLink: s?.applyLink ?? "",
     // Every entry is kept (dates, text, or both) so saving never drops any.
     dates: toDateRows(s?.importantDates),
+    examDetails: toExamDetailsForm(s?.examDetails),
   };
 }
 
@@ -108,6 +119,10 @@ export function SeriesDrawer({
   const save = useMutation({
     mutationFn: () => {
       const importantDates = fromDateRows(form.dates);
+      // Sent only when edited, so saving other fields can never wipe the
+      // sections (e.g. if the record this drawer opened from lacked them).
+      const examDetailsChanged =
+        JSON.stringify(form.examDetails) !== JSON.stringify(initial.examDetails);
       const input = {
         name: form.name.trim(),
         description: form.description.trim(),
@@ -122,6 +137,7 @@ export function SeriesDrawer({
         officialWebsite: form.officialWebsite.trim(),
         applyLink: form.applyLink.trim(),
         importantDates,
+        ...(examDetailsChanged && { examDetails: form.examDetails }),
         imageFile,
         notificationPdfFile: pdfFile,
       };
@@ -384,6 +400,28 @@ export function SeriesDrawer({
             <Plus className="size-4" /> Add date
           </Button>
         </div>
+      </FieldGroup>
+
+      <Separator />
+
+      <FieldGroup title="Exam details">
+        <p className="text-sm text-muted-foreground">
+          Shown on the exam page. Leave a section empty to hide it. Plain text: a blank line starts
+          a new paragraph, and a line starting with &quot;- &quot; becomes a bullet.
+        </p>
+        {EXAM_DETAIL_KEYS.map((key) => (
+          <div key={key} className="space-y-2">
+            <Label htmlFor={`series-detail-${key}`}>{EXAM_DETAIL_META[key].title}</Label>
+            <Textarea
+              id={`series-detail-${key}`}
+              value={form.examDetails[key]}
+              maxLength={EXAM_DETAIL_MAX}
+              rows={5}
+              placeholder={EXAM_DETAIL_META[key].hint}
+              onChange={(e) => set("examDetails", { ...form.examDetails, [key]: e.target.value })}
+            />
+          </div>
+        ))}
       </FieldGroup>
     </FormDrawer>
   );

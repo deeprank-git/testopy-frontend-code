@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   LayoutGrid, ClipboardList, FileText,
   ExternalLink, Globe, Download, ArrowLeft,
-  Landmark, User, BookOpen, Clock,
+  Landmark, Clock,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +26,8 @@ import {
 } from "@/lib/important-dates";
 import { isPublishedVisible } from "@/lib/publish";
 import { examPageLinks } from "@/lib/exam-links";
+import type { ExamDetails } from "@/lib/exam-details";
+import { ExamDetailSections } from "@/components/site/ExamDetailSections";
 
 type SeriesApiData = {
   name: string;
@@ -35,6 +37,7 @@ type SeriesApiData = {
   applyLink?: string;
   notificationPdf?: string;
   importantDates?: ImportantDates;
+  examDetails?: ExamDetails;
   isPublished?: boolean;
   isActive?: boolean;
   category?: { _id?: string } | string;
@@ -64,36 +67,13 @@ const NAV_ITEMS = [
   { id: "pyp", label: "Previous Year Question Paper", icon: FileText },
 ] as const;
 
-const EXAM_DETAIL_SECTIONS = [
-  {
-    id: "eligibility",
-    title: "Eligibility",
-    description: "Nationality, Age Limit, Qualification, Age Relaxation and other eligibility criteria.",
-    icon: User,
-    tint: "bg-blue-50 text-blue-600",
-  },
-  {
-    id: "pattern",
-    title: "Exam Pattern",
-    description: "Subjects, Number of Questions, Marks, Duration, Negative Marking and other details.",
-    icon: ClipboardList,
-    tint: "bg-emerald-50 text-emerald-600",
-  },
-  {
-    id: "syllabus",
-    title: "Syllabus",
-    description: "Subject-wise detailed syllabus and topics to be covered in the exam.",
-    icon: BookOpen,
-    tint: "bg-violet-50 text-violet-600",
-  },
-];
 
 // hrefs for officialWebsite/applyLink/notificationPdf are filled in at render
 // time from the fetched series doc.
 const QUICK_LINKS_CONFIG = [
   { label: "Official Website", icon: Globe, key: "officialWebsite" as const },
   { label: "Apply Online", icon: ExternalLink, key: "applyLink" as const },
-  { label: "Download Syllabus", icon: Download, key: "notificationPdf" as const },
+  { label: "Notification PDF", icon: Download, key: "notificationPdf" as const },
 ];
 
 function TestSeriesDetailPage() {
@@ -350,22 +330,7 @@ function TestSeriesDetailPage() {
                 )}
               </div>
 
-              <div className="space-y-3">
-                {EXAM_DETAIL_SECTIONS.map((s) => (
-                  <button
-                    key={s.id}
-                    className="w-full flex items-center gap-4 rounded-xl border border-border p-4 text-left hover:border-primary/40 hover:shadow-sm transition"
-                  >
-                    <span className={cn("h-12 w-12 rounded-xl grid place-items-center shrink-0", s.tint)}>
-                      <s.icon className="h-5 w-5" />
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-display font-bold text-base">{s.title}</div>
-                      <div className="text-sm text-muted-foreground mt-0.5">{s.description}</div>
-                    </div>
-                  </button>
-                ))}
-              </div>
+              <ExamDetailSections details={series?.examDetails} />
             </Card>
           )}
 

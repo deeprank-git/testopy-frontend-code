@@ -1,5 +1,6 @@
 import axiosClient from "@/api/axiosClient";
 import type { ImportantDates } from "@/lib/important-dates";
+import type { ExamDetails } from "@/lib/exam-details";
 
 export async function getTestSeries(params?: {
   category?: string;
@@ -30,13 +31,16 @@ export type TestSeriesInput = {
   officialWebsite: string;
   applyLink: string;
   importantDates: ImportantDates;
+  examDetails?: ExamDetails;
   order?: number;
   imageFile?: File | null;
   notificationPdfFile?: File | null;
 };
 
 // Admin create/update are multipart (routes/testSeriesAdminRoutes.js reads
-// `image` and `notificationPdf` files); importantDates travels as a JSON string.
+// `image` and `notificationPdf` files); importantDates and examDetails travel as JSON strings.
+const JSON_FIELDS = new Set(["importantDates", "examDetails"]);
+
 function toSeriesFormData(input: Partial<TestSeriesInput> & { isPublished?: boolean }) {
   const fd = new FormData();
   for (const [key, value] of Object.entries(input)) {
@@ -47,7 +51,7 @@ function toSeriesFormData(input: Partial<TestSeriesInput> & { isPublished?: bool
       key === "notificationPdfFile"
     )
       continue;
-    fd.append(key, key === "importantDates" ? JSON.stringify(value) : String(value));
+    fd.append(key, JSON_FIELDS.has(key) ? JSON.stringify(value) : String(value));
   }
   if (input.imageFile) fd.append("image", input.imageFile);
   if (input.notificationPdfFile) fd.append("notificationPdf", input.notificationPdfFile);
