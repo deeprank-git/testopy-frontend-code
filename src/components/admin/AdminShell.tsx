@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   LogOut,
   Newspaper,
+  TerminalSquare,
   User,
   Users,
   type LucideIcon,
@@ -50,6 +51,7 @@ const NAV: NavItem[] = [
   { to: "/admin-dashboard/users", label: "Users", icon: Users },
   { to: "/admin-dashboard/reports", label: "Reports", icon: Flag },
   { to: "/admin-dashboard/notifications", label: "Notifications", icon: Bell },
+  { to: "/admin-dashboard/scripts", label: "Scripts", icon: TerminalSquare },
 ];
 
 export function AdminShell() {

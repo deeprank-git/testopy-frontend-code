@@ -26,6 +26,7 @@ import { Route as AdminDashboardUsersRouteImport } from './routes/admin-dashboar
 import { Route as AdminDashboardTestsRouteImport } from './routes/admin-dashboard.tests'
 import { Route as AdminDashboardTestSeriesRouteImport } from './routes/admin-dashboard.test-series'
 import { Route as AdminDashboardSettingsRouteImport } from './routes/admin-dashboard.settings'
+import { Route as AdminDashboardScriptsRouteImport } from './routes/admin-dashboard.scripts'
 import { Route as AdminDashboardReportsRouteImport } from './routes/admin-dashboard.reports'
 import { Route as AdminDashboardQuestionsRouteImport } from './routes/admin-dashboard.questions'
 import { Route as AdminDashboardProfileRouteImport } from './routes/admin-dashboard.profile'
@@ -140,6 +141,11 @@ const AdminDashboardTestSeriesRoute =
 const AdminDashboardSettingsRoute = AdminDashboardSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AdminDashboardRoute,
+} as any)
+const AdminDashboardScriptsRoute = AdminDashboardScriptsRouteImport.update({
+  id: '/scripts',
+  path: '/scripts',
   getParentRoute: () => AdminDashboardRoute,
 } as any)
 const AdminDashboardReportsRoute = AdminDashboardReportsRouteImport.update({
@@ -335,6 +341,7 @@ export interface FileRoutesByFullPath {
   '/admin-dashboard/profile': typeof AdminDashboardProfileRoute
   '/admin-dashboard/questions': typeof AdminDashboardQuestionsRoute
   '/admin-dashboard/reports': typeof AdminDashboardReportsRoute
+  '/admin-dashboard/scripts': typeof AdminDashboardScriptsRoute
   '/admin-dashboard/settings': typeof AdminDashboardSettingsRoute
   '/admin-dashboard/test-series': typeof AdminDashboardTestSeriesRoute
   '/admin-dashboard/tests': typeof AdminDashboardTestsRoute
@@ -381,6 +388,7 @@ export interface FileRoutesByTo {
   '/admin-dashboard/profile': typeof AdminDashboardProfileRoute
   '/admin-dashboard/questions': typeof AdminDashboardQuestionsRoute
   '/admin-dashboard/reports': typeof AdminDashboardReportsRoute
+  '/admin-dashboard/scripts': typeof AdminDashboardScriptsRoute
   '/admin-dashboard/settings': typeof AdminDashboardSettingsRoute
   '/admin-dashboard/test-series': typeof AdminDashboardTestSeriesRoute
   '/admin-dashboard/tests': typeof AdminDashboardTestsRoute
@@ -431,6 +439,7 @@ export interface FileRoutesById {
   '/admin-dashboard/profile': typeof AdminDashboardProfileRoute
   '/admin-dashboard/questions': typeof AdminDashboardQuestionsRoute
   '/admin-dashboard/reports': typeof AdminDashboardReportsRoute
+  '/admin-dashboard/scripts': typeof AdminDashboardScriptsRoute
   '/admin-dashboard/settings': typeof AdminDashboardSettingsRoute
   '/admin-dashboard/test-series': typeof AdminDashboardTestSeriesRoute
   '/admin-dashboard/tests': typeof AdminDashboardTestsRoute
@@ -481,6 +490,7 @@ export interface FileRouteTypes {
     | '/admin-dashboard/profile'
     | '/admin-dashboard/questions'
     | '/admin-dashboard/reports'
+    | '/admin-dashboard/scripts'
     | '/admin-dashboard/settings'
     | '/admin-dashboard/test-series'
     | '/admin-dashboard/tests'
@@ -527,6 +537,7 @@ export interface FileRouteTypes {
     | '/admin-dashboard/profile'
     | '/admin-dashboard/questions'
     | '/admin-dashboard/reports'
+    | '/admin-dashboard/scripts'
     | '/admin-dashboard/settings'
     | '/admin-dashboard/test-series'
     | '/admin-dashboard/tests'
@@ -576,6 +587,7 @@ export interface FileRouteTypes {
     | '/admin-dashboard/profile'
     | '/admin-dashboard/questions'
     | '/admin-dashboard/reports'
+    | '/admin-dashboard/scripts'
     | '/admin-dashboard/settings'
     | '/admin-dashboard/test-series'
     | '/admin-dashboard/tests'
@@ -741,6 +753,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/admin-dashboard/settings'
       preLoaderRoute: typeof AdminDashboardSettingsRouteImport
+      parentRoute: typeof AdminDashboardRoute
+    }
+    '/admin-dashboard/scripts': {
+      id: '/admin-dashboard/scripts'
+      path: '/scripts'
+      fullPath: '/admin-dashboard/scripts'
+      preLoaderRoute: typeof AdminDashboardScriptsRouteImport
       parentRoute: typeof AdminDashboardRoute
     }
     '/admin-dashboard/reports': {
@@ -1032,6 +1051,7 @@ interface AdminDashboardRouteChildren {
   AdminDashboardProfileRoute: typeof AdminDashboardProfileRoute
   AdminDashboardQuestionsRoute: typeof AdminDashboardQuestionsRoute
   AdminDashboardReportsRoute: typeof AdminDashboardReportsRoute
+  AdminDashboardScriptsRoute: typeof AdminDashboardScriptsRoute
   AdminDashboardSettingsRoute: typeof AdminDashboardSettingsRoute
   AdminDashboardTestSeriesRoute: typeof AdminDashboardTestSeriesRoute
   AdminDashboardTestsRoute: typeof AdminDashboardTestsRoute
@@ -1051,6 +1071,7 @@ const AdminDashboardRouteChildren: AdminDashboardRouteChildren = {
   AdminDashboardProfileRoute: AdminDashboardProfileRoute,
   AdminDashboardQuestionsRoute: AdminDashboardQuestionsRoute,
   AdminDashboardReportsRoute: AdminDashboardReportsRoute,
+  AdminDashboardScriptsRoute: AdminDashboardScriptsRoute,
   AdminDashboardSettingsRoute: AdminDashboardSettingsRoute,
   AdminDashboardTestSeriesRoute: AdminDashboardTestSeriesRoute,
   AdminDashboardTestsRoute: AdminDashboardTestsRoute,
