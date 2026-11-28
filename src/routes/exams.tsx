@@ -18,7 +18,8 @@ import { isPublishedVisible } from "@/lib/publish";
 import { categoriesWithSeries } from "@/lib/categories";
 
 export const Route = createFileRoute("/exams")({
-  validateSearch: (search: Record<string, unknown>) => ({
+  // `q` is optional so plain <Link to="/exams"> works without a search object.
+  validateSearch: (search: Record<string, unknown>): { q?: string } => ({
     q: typeof search.q === "string" ? search.q : undefined,
   }),
   head: () => ({
