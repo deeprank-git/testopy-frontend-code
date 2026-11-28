@@ -4,7 +4,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArticleImage } from "@/components/site/ArticleImage";
-import { renderHighlightedParagraph, splitIntoParagraphs, ARTICLE_LINK_CLASS } from "@/lib/articleContent";
+import { ArticleBody } from "@/components/site/ArticleBody";
+import { ARTICLE_LINK_CLASS } from "@/lib/articleContent";
 import { cn } from "@/lib/utils";
 
 type Variant = "public" | "dashboard";
@@ -17,73 +18,89 @@ type Variant = "public" | "dashboard";
 // auth-based branching here — only which internal route "More in <category>"
 // and "Browse All" link back into.
 export function ArticleDetail({ article, more, variant }: { article: any; more: any[]; variant: Variant }) {
-  const paragraphs = splitIntoParagraphs(article.content);
   const hasAttribution = !!(article.source || article.source_link || article.url);
+  const tags: string[] = Array.isArray(article.tags) ? article.tags.filter(Boolean) : [];
 
   return (
     <div className="grid xl:grid-cols-[1fr_320px] gap-5 items-start">
       <Card className="overflow-hidden min-w-0">
-        <ArticleImage image={article.image} alt={article.title} className="h-64 md:h-80 w-full" />
-
-        <div className="p-6 lg:p-8">
+        <div className="px-6 pt-7 lg:px-10 lg:pt-9">
           {article.category_link ? (
             <a href={article.category_link} target="_blank" rel="noopener noreferrer">
-              <Badge className="bg-primary/15 text-primary border-transparent hover:bg-primary/25 transition-colors cursor-pointer">
+              <Badge className="bg-primary/10 text-primary border-transparent font-semibold uppercase tracking-wide text-[11px] hover:bg-primary/20 transition-colors cursor-pointer">
                 {article.category}
               </Badge>
             </a>
           ) : (
-            <Badge className="bg-primary/15 text-primary border-transparent">{article.category}</Badge>
+            <Badge className="bg-primary/10 text-primary border-transparent font-semibold uppercase tracking-wide text-[11px]">
+              {article.category}
+            </Badge>
           )}
 
-          <h1 className="mt-3 text-2xl md:text-4xl font-display font-extrabold leading-tight text-balance">
+          <h1 className="mt-4 max-w-[760px] font-display text-[28px] font-extrabold leading-[1.2] tracking-tight text-foreground text-balance md:text-[38px]">
             {article.title}
           </h1>
 
-          <div className="flex items-center flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground mt-4">
+          <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
             <span className="flex items-center gap-1.5">
               <CalendarDays className="h-4 w-4" />
-              {new Date(article.date).toLocaleDateString(undefined, { day: "2-digit", month: "long", year: "numeric" })}
+              {new Date(article.date).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" })}
             </span>
-            {typeof article.views === "number" && (
+            {article.source && (
               <span className="flex items-center gap-1.5">
+                <span aria-hidden className="text-border">•</span>
+                Source: <span className="font-medium text-foreground/80">{article.source}</span>
+              </span>
+            )}
+            {typeof article.views === "number" && article.views > 0 && (
+              <span className="flex items-center gap-1.5">
+                <span aria-hidden className="text-border">•</span>
                 <Eye className="h-4 w-4" />
                 {article.views.toLocaleString()} view{article.views === 1 ? "" : "s"}
               </span>
             )}
-            {/* Optional polish: createdBy is absent for every scraper-sourced
-                article, so its absence is a reasonable (not guaranteed) signal
-                the piece is curated rather than staff-written. */}
+            {/* createdBy is absent for every scraper-sourced article, so its
+                absence is a reasonable (not guaranteed) signal the piece is
+                curated rather than staff-written. */}
             <span className="flex items-center gap-1.5">
+              <span aria-hidden className="text-border">•</span>
               {article.createdBy ? <PenLine className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
               {article.createdBy ? "Staff-written" : "Curated"}
             </span>
           </div>
+        </div>
 
-          {Array.isArray(article.tags) && article.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mt-4">
-              {article.tags.map((tag: string) => (
-                <Badge key={tag} variant="outline" className="text-xs font-normal">
+        {/* No image: the article starts straight with its text (no placeholder). */}
+        <ArticleImage
+          image={article.image}
+          alt={article.title}
+          fit="contain"
+          hideWhenMissing
+          className="mx-6 mt-6 max-h-[440px] rounded-xl border border-border lg:mx-10 [&_img]:max-h-[440px]"
+        />
+
+        <div className="px-6 pb-8 pt-7 lg:px-10 lg:pb-10">
+          {article.summary && (
+            <p className="mb-6 max-w-[720px] border-l-4 border-primary/60 pl-4 text-lg leading-relaxed text-foreground/80">
+              {article.summary}
+            </p>
+          )}
+
+          <ArticleBody content={article.content} title={article.title} />
+
+          {tags.length > 0 && (
+            <div className="mt-10 flex max-w-[720px] flex-wrap items-center gap-2 border-t border-border pt-5">
+              <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Topics</span>
+              {tags.map((tag) => (
+                <Badge key={tag} variant="secondary" className="text-xs font-normal">
                   {tag}
                 </Badge>
               ))}
             </div>
           )}
 
-          {article.summary && (
-            <p className="mt-5 text-lg text-muted-foreground italic leading-relaxed max-w-[720px]">{article.summary}</p>
-          )}
-
-          <div className="mt-6 space-y-4 text-[16px] md:text-[17px] leading-8 max-w-[720px] text-foreground/90">
-            {paragraphs.length > 0 ? (
-              paragraphs.map((para, i) => <p key={i}>{renderHighlightedParagraph(para, article.tags)}</p>)
-            ) : (
-              <p className="text-muted-foreground italic">No content available for this article.</p>
-            )}
-          </div>
-
           {hasAttribution && (
-            <div className="mt-8 pt-5 border-t border-border text-sm">
+            <div className={cn("max-w-[720px] text-sm", tags.length > 0 ? "mt-4" : "mt-10 border-t border-border pt-5")}>
               {article.source || article.source_link ? (
                 <p className="text-muted-foreground">
                   Originally published by{" "}

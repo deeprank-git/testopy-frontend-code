@@ -1,58 +1,64 @@
 import { useState } from "react";
+import { Newspaper } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { resolveCurrentAffairsImageUrl } from "@/services/mediaService";
-import noImagePlaceholder from "@/assets/no-image-placeholder.png";
 
-// Sampled from the placeholder PNG's own background (~#fcfcfd) so a
-// letterboxed/pillarboxed edge blends into the illustration instead of
-// showing a harsh color break.
-const PLACEHOLDER_BG = "#fcfcfd";
-
-// Shared image-resolution + fallback logic for CurrentAffairs.image — the
-// single place every article thumbnail (Top Stories, Latest Updates,
-// category-filtered lists, "More in category", the article detail hero, and
-// the admin edit preview) goes through, so they can't drift out of sync the
-// way "Latest Updates" once did: absolute gktoday.in URLs render as-is,
-// relative admin-uploaded paths get the API host prepended, and anything
-// empty (or that fails to load) shows the same hardcoded placeholder graphic
-// — never a per-category icon or a broken <img>.
+// Shared image + fallback for CurrentAffairs.image — every article thumbnail
+// (Top Stories, Latest Updates, "More in category", the article hero, the
+// admin preview) goes through here so they can't drift apart. Absolute
+// scraped URLs (gktoday.in, drishtiias.com) render as-is; relative admin
+// uploads get the API host prepended (resolveCurrentAffairsImageUrl).
 //
-// Real photos use object-cover (arbitrary aspect ratio, cropping is fine and
-// expected). The placeholder is a square illustration with its own baked-in
-// "NEWS" heading and caption text, so it uses object-contain instead — cover
-// would crop that text off depending on the container's aspect ratio. This
-// branch lives here (not per call site) so every context stays consistent.
+// No image (or one that fails to load):
+//   - default: a neutral tile with a newspaper icon, which reads cleanly at
+//     any size from a 56px thumbnail to a card header
+//   - hideWhenMissing: nothing at all (the article page skips the hero)
+//
+// fit="cover" (default) crops photos to the box; fit="contain" shows the
+// whole picture on a soft background — for the article hero, where scraped
+// images are often infographics that mustn't be cropped.
 export function ArticleImage({
   image,
   alt,
   className,
+  fit = "cover",
+  hideWhenMissing = false,
 }: {
   image?: string | null;
   alt: string;
   className?: string;
+  fit?: "cover" | "contain";
+  hideWhenMissing?: boolean;
 }) {
   const [errored, setErrored] = useState(false);
   const url = resolveCurrentAffairsImageUrl(image);
   const showImage = !!url && !errored;
 
+  if (!showImage && hideWhenMissing) return null;
+
   return (
-    <div className={cn("relative overflow-hidden shrink-0", className)}>
+    <div className={cn("relative shrink-0 overflow-hidden", className)}>
       {showImage ? (
         <img
           src={url}
           alt={alt}
+          loading="lazy"
+          referrerPolicy="no-referrer"
           onError={() => setErrored(true)}
-          className="w-full h-full object-cover"
+          className={cn(
+            "h-full w-full",
+            fit === "cover" ? "object-cover" : "bg-muted/40 object-contain",
+          )}
         />
       ) : (
         <div
-          className="w-full h-full flex items-center justify-center p-3"
-          style={{ backgroundColor: PLACEHOLDER_BG }}
+          role="img"
+          aria-label="No image for this article"
+          className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/10 via-primary/5 to-muted"
         >
-          <img
-            src={noImagePlaceholder}
-            alt="No image available for this article"
-            className="max-w-full max-h-full object-contain"
+          <Newspaper
+            className="h-[38%] max-h-12 w-[38%] max-w-12 text-primary/35"
+            strokeWidth={1.5}
           />
         </div>
       )}
